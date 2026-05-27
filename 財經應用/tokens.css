@@ -1,0 +1,243 @@
+/* ─────────────────────────────────────────────────────────────
+   Worldwide Finance — Colors & Type tokens
+   全球金融儀表板 · Design tokens
+   Source of truth: Finance App/src/renderer/src/App.css
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Webfonts ───────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Noto Sans TC';
+  src: url('./fonts/NotoSansTC.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/Inter-Italic.ttf') format('truetype-variations');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Inter upright is NOT shipped locally — pulled from Google Fonts.
+   See README → "Font substitutions" for context. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+
+:root {
+  /* ── Color palette · raw ─────────────────────────────────── */
+
+  /* Surfaces — deep navy / slate, near-black */
+  --bg:            #0a0e1a;   /* App canvas / page background */
+  --bg-card:       #111827;   /* Section panels, modals */
+  --bg-hover:      #1a2235;   /* Row hover, empty image slot */
+  --bg-elevated:   rgba(255, 255, 255, 0.02); /* Subtle layer over card */
+  --border:        #1e293b;   /* Panel & divider line */
+
+  /* Foreground */
+  --text:          #f1f5f9;   /* Primary text */
+  --text-muted:    #64748b;   /* Labels, captions, metadata */
+
+  /* Brand */
+  --brand-blue:        #3b82f6;   /* Primary action, links, focus */
+  --brand-blue-dark:   #1d4ed8;   /* Pressed / resting button fill */
+  --brand-globe-deep:  #1e3a8a;   /* Logo: deep ocean blue (globe ring) */
+  --brand-teal:        #2dd4bf;   /* Logo: rising arrow accent */
+
+  /* Semantic — finance-specific */
+  --green:        #10b981;   /* Up / gain / open */
+  --green-dim:    rgba(16, 185, 129, 0.12);
+  --red:          #ef4444;   /* Down / loss / error */
+  --red-dim:      rgba(239, 68, 68, 0.12);
+  --amber:        #f59e0b;   /* Pre / post market, warning */
+  --amber-dim:    rgba(245, 158, 11, 0.12);
+  --muted-dim:    rgba(100, 116, 139, 0.12);
+
+  /* Tinted brand fills */
+  --blue-tint:    rgba(59, 130, 246, 0.10);
+  --blue-tint-strong: rgba(59, 130, 246, 0.20);
+  --blue-border:  rgba(59, 130, 246, 0.30);
+
+  /* Foreground on top of dark surfaces */
+  --on-dark:      #ffffff;
+
+
+  /* ── Typography · raw ────────────────────────────────────── */
+
+  /* Stacks — Latin first, then Traditional Chinese fallbacks */
+  --font-sans: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', 'Microsoft JhengHei UI', 'Microsoft JhengHei',
+               '微軟正黑體', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular,
+               'SF Mono', Menlo, Consolas, monospace;
+
+  /* Type scale — UI is dense; sizes skew small */
+  --fs-10: 10px;   /* state tags, badge codes */
+  --fs-11: 11px;   /* meta, captions, footer */
+  --fs-12: 12px;   /* section titles, secondary */
+  --fs-13: 13px;   /* row labels, body */
+  --fs-14: 14px;   /* default body, price */
+  --fs-15: 15px;   /* section icon */
+  --fs-17: 17px;   /* header title */
+  --fs-18: 18px;   /* modal name */
+  --fs-24: 24px;   /* modal price */
+  --fs-32: 32px;   /* hero figures */
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  --lh-tight:    1.2;
+  --lh-snug:     1.45;
+  --lh-normal:   1.55;
+
+  --tracking-tight:  -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.3px;   /* header title */
+  --tracking-wider:   0.6px;   /* SECTION LABELS, UPPERCASE */
+
+
+  /* ── Spacing · raw ───────────────────────────────────────── */
+  --s-1:  2px;
+  --s-2:  4px;
+  --s-3:  6px;
+  --s-4:  8px;
+  --s-5:  10px;
+  --s-6:  12px;
+  --s-8:  16px;
+  --s-10: 20px;
+  --s-12: 24px;
+  --s-16: 32px;
+
+
+  /* ── Radii ───────────────────────────────────────────────── */
+  --radius-xs:    4px;   /* state tags, small chips */
+  --radius-sm:    5px;   /* tabs, pill buttons */
+  --radius-md:    6px;   /* inputs, buttons */
+  --radius-lg:    8px;   /* stat tiles */
+  --radius-xl:    12px;  /* section panels */
+  --radius-2xl:   16px;  /* modal cards */
+  --radius-pill:  999px; /* error pill */
+
+
+  /* ── Elevation ───────────────────────────────────────────── */
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.6);
+  --shadow-pop:   0 8px 24px rgba(0, 0, 0, 0.4);
+
+
+  /* ── Motion ──────────────────────────────────────────────── */
+  --t-fast:    120ms;
+  --t-normal:  150ms;
+  --t-slow:    200ms;
+  --ease:      ease;            /* Default in the codebase */
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+
+
+  /* ── Semantic aliases ────────────────────────────────────── */
+  --fg-1: var(--text);
+  --fg-2: var(--text-muted);
+  --bg-1: var(--bg);
+  --bg-2: var(--bg-card);
+  --bg-3: var(--bg-hover);
+
+  --positive: var(--green);
+  --negative: var(--red);
+  --neutral:  var(--text-muted);
+  --pending:  var(--amber);
+}
+
+
+/* ── Semantic type classes ──────────────────────────────────
+   These mirror how text is used in the Finance app. Apply to
+   plain elements OR use as a reference when writing components.
+   ─────────────────────────────────────────────────────────── */
+
+.t-header-title {
+  font-family: var(--font-sans);
+  font-size: var(--fs-17);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-1);
+}
+
+.t-section-label {
+  /* e.g. "全球股市" SECTION header label.
+     Sized up & full-contrast so it leads the section. */
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-bold);
+  color: var(--fg-1);
+  letter-spacing: 0.2px;
+}
+
+.t-row-label {
+  /* e.g. "S&P 500" left side of a market row.
+     Bumped to 14/600 so item names read as the primary content. */
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+}
+
+.t-price {
+  /* Numeric price — ALWAYS tabular */
+  font-family: var(--font-sans);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-1);
+}
+
+.t-price-hero {
+  font-family: var(--font-sans);
+  font-size: var(--fs-24);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+
+.t-change {
+  font-family: var(--font-sans);
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-symbol {
+  /* "AAPL", "2330.TW" — monospace ticker */
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  color: var(--fg-2);
+}
+
+.t-meta {
+  font-family: var(--font-sans);
+  font-size: var(--fs-11);
+  color: var(--fg-2);
+}
+
+.t-body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+}
+
+.t-card-title {
+  /* News card headline */
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-normal);
+  color: var(--fg-1);
+}
+
+.t-footer {
+  font-family: var(--font-sans);
+  font-size: var(--fs-11);
+  color: var(--fg-2);
+}
