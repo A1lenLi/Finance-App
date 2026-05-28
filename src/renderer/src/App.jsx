@@ -9,6 +9,22 @@ import {
   PortfolioModal, AlertModal, PortfolioBand,
   WatchlistPage,
 } from './Finance'
+import { LearnPage, MiniLearnCard, CARDS as LEARN_CARDS } from './Learn'
+
+// 個股頁面 → 相關教學卡片 mapping
+const LEARN_MAP = {
+  stock:   ['candlestick', 'ma', 'rsi', 'macd', 'kd', 'pe-ratio', 'eps'],
+  index:   ['indices', 'rsi', 'macd', 'vix', 'market-cycle'],
+  forex:   ['forex', 'candlestick', 'ma', 'rsi'],
+  commod:  ['candlestick', 'ma', 'rsi', 'macd'],
+  crypto:  ['candlestick', 'rsi', 'vix', 'fear-greed'],
+  bond:    ['indices', 'vix', 'market-cycle'],
+}
+function getRelatedCards(kind) {
+  return (LEARN_MAP[kind] || LEARN_MAP.stock)
+    .filter(id => LEARN_CARDS.some(c => c.id === id))
+    .slice(0, 5)
+}
 
 // ═══════════════════════════════════════════════════════════════
 // SYMBOL PAGE
@@ -467,6 +483,15 @@ function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbol, onOp
                 ))}
               </div>
             </SPCard>
+
+            <SPCard kicker="LEARN" title="相關指標教學"
+              action={<span className="sp-card-aux">點擊展開 · 閱讀進度自動儲存</span>}>
+              <div className="sp-learn-list">
+                {getRelatedCards(kind).map(id => (
+                  <MiniLearnCard key={id} cardId={id}/>
+                ))}
+              </div>
+            </SPCard>
           </div>
 
           <div className="sp-col">
@@ -790,6 +815,7 @@ export default function App() {
   const [rightCollapsed, setRightCollapsed] = useState(!t.sidebar)
   const [symbolPage, setSymbolPage] = useState(null)
   const [watchlistPage, setWatchlistPage] = useState(false)
+  const [learnPage, setLearnPage] = useState(false)
   const [newsModal, setNewsModal] = useState(null)
   const [glossPopup, setGlossPopup] = useState(null)
   const [glossIndex, setGlossIndex] = useState(false)
@@ -945,15 +971,19 @@ export default function App() {
 
   const onNavSelect = (item) => {
     setActiveNav(item.id)
-    setSymbolPage(null)  // 離開個股頁
+    setSymbolPage(null)
     if (item.section === 'watch') {
       setWatchlistPage(true)
+      setLearnPage(false)
+    } else if (item.section === 'learn') {
+      setLearnPage(true)
+      setWatchlistPage(false)
     } else {
       setWatchlistPage(false)
+      setLearnPage(false)
       if (item.section === 'market') { setMatrixTab(item.tab); scrollTo('section-market') }
       else if (item.section === 'pulse') scrollTo('section-hero')
       else if (item.section === 'news') scrollTo('section-news')
-      else if (item.section === 'learn') setGlossIndex(true)
     }
   }
   const scrollTo = (id) => setTimeout(() => {
@@ -1003,6 +1033,8 @@ export default function App() {
                   onOpenNews={setNewsModal}
                   onOpenAlert={setAlertItem}
                 />
+              ) : learnPage ? (
+                <LearnPage/>
               ) : watchlistPage ? (
                 <WatchlistPage
                   items={watchlistData}

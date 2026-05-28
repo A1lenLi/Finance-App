@@ -309,6 +309,10 @@ function createWindow() {
 }
 
 // ── App lifecycle ─────────────────────────────────────────────────────────
+// Point GPU disk-cache to our own folder so Chromium never collides with
+// another instance and eliminates the cache_util_win.cc ACCESS_DENIED noise.
+app.commandLine.appendSwitch('disk-cache-dir', join(app.getPath('userData'), 'gpu-cache'))
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.finance.dashboard')
 
