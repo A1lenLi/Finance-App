@@ -25,35 +25,33 @@ const CATS = {
 // ── SVG Visuals ───────────────────────────────────────────────────────────
 function CandleVis() {
   const candles = [
-    { x:52,  o:90,  c:50,  h:34,  l:104, up:true  },
-    { x:120, o:52,  c:84,  h:40,  l:94,  up:false },
-    { x:188, o:76,  c:58,  h:64,  l:108, up:true  },
+    { x:64,  o:108, c:60,  h:42,  l:124, up:true  },
+    { x:148, o:62,  c:100, h:48,  l:112, up:false },
+    { x:232, o:92,  c:70,  h:76,  l:130, up:true  },
   ]
   return (
-    <svg viewBox="0 0 260 130" width="100%" height="120" style={{ display:'block' }}>
+    <svg viewBox="0 0 296 168" width="100%" height="158" style={{ display:'block' }}>
       {candles.map((c, i) => {
         const col = c.up ? '#ef4444' : '#22c55e'
         const bodyTop = Math.min(c.o, c.c)
-        const bodyH   = Math.max(Math.abs(c.c - c.o), 3)
+        const bodyH   = Math.max(Math.abs(c.c - c.o), 4)
         return (
           <g key={i}>
-            <line x1={c.x} y1={c.h} x2={c.x} y2={c.l} stroke={col} strokeWidth="1.5"/>
-            <rect x={c.x - 9} y={bodyTop} width="18" height={bodyH} fill={col} rx="2"/>
+            <line x1={c.x} y1={c.h} x2={c.x} y2={c.l} stroke={col} strokeWidth="2"/>
+            <rect x={c.x - 13} y={bodyTop} width="26" height={bodyH} fill={col} rx="3"/>
           </g>
         )
       })}
-      {/* Annotation: first candle */}
-      <text x="52" y="22" fontSize="9" fill="#94a3b8" textAnchor="middle">上影線</text>
-      <text x="52" y="118" fontSize="9" fill="#94a3b8" textAnchor="middle">下影線</text>
-      <text x="52" y="74" fontSize="9" fill="#ef4444" textAnchor="middle" fontWeight="600">陽線</text>
-      <text x="120" y="74" fontSize="9" fill="#22c55e" textAnchor="middle" fontWeight="600">陰線</text>
-      <line x1="58" y1="38" x2="54" y2="48" stroke="#475569" strokeWidth="0.8"/>
-      <line x1="58" y1="102" x2="54" y2="96" stroke="#475569" strokeWidth="0.8"/>
-      {/* Legend */}
-      <rect x="158" y="108" width="12" height="10" fill="#ef4444" rx="1.5"/>
-      <text x="174" y="117" fontSize="8.5" fill="#ef4444">陽線 (台)</text>
-      <rect x="218" y="108" width="12" height="10" fill="#22c55e" rx="1.5"/>
-      <text x="234" y="117" fontSize="8.5" fill="#22c55e">陰</text>
+      <text x="64"  y="28"  fontSize="11" fill="#94a3b8" textAnchor="middle">上影線</text>
+      <text x="64"  y="152" fontSize="11" fill="#94a3b8" textAnchor="middle">下影線</text>
+      <text x="64"  y="90"  fontSize="11" fill="#ef4444" textAnchor="middle" fontWeight="600">陽線</text>
+      <text x="148" y="90"  fontSize="11" fill="#22c55e" textAnchor="middle" fontWeight="600">陰線</text>
+      <line x1="72" y1="50" x2="68" y2="62" stroke="#475569" strokeWidth="1"/>
+      <line x1="72" y1="122" x2="68" y2="114" stroke="#475569" strokeWidth="1"/>
+      <rect x="168" y="142" width="14" height="12" fill="#ef4444" rx="2"/>
+      <text x="186" y="153" fontSize="11" fill="#ef4444">陽線 (台)</text>
+      <rect x="244" y="142" width="14" height="12" fill="#22c55e" rx="2"/>
+      <text x="262" y="153" fontSize="11" fill="#22c55e">陰</text>
     </svg>
   )
 }
@@ -62,9 +60,9 @@ function MAVis() {
   const prices = [82,80,84,78,82,88,90,86,92,95,91,96,100,98,104]
   const ma5  = prices.map((_,i) => i<4  ? null : prices.slice(i-4,i+1).reduce((a,b)=>a+b)/5)
   const ma20 = prices.map((_,i) => i<14 ? null : prices.slice(i-14,i+1).reduce((a,b)=>a+b)/15)
-  const W=260, H=106, pad=12
+  const W=296, H=130, pad=14
   const xs     = prices.map((_,i) => pad + i*(W-pad*2)/(prices.length-1))
-  const scaleY = v => H - pad - (v-75)/(110-75)*(H-pad*2)
+  const scaleY = v => H - 20 - (v-75)/(110-75)*(H-40)
   const linePath = pts => pts.reduce((acc,p,i) => acc+(i===0?'M':'L')+`${p[0].toFixed(1)},${p[1].toFixed(1)} `,'')
   const priceL = linePath(prices.map((v,i) => [xs[i], scaleY(v)]))
   const ma5L   = linePath(ma5.map((v,i)   => v != null ? [xs[i], scaleY(v)] : null).filter(Boolean))
@@ -72,23 +70,23 @@ function MAVis() {
   const gcX = xs[10], gcY = scaleY(91)
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display:'block' }}>
-      <path d={priceL} fill="none" stroke="rgba(148,163,184,0.4)" strokeWidth="1.5"/>
-      <path d={ma5L}   fill="none" stroke="#f59e0b" strokeWidth="1.8" strokeDasharray="5 2"/>
-      <path d={ma20L}  fill="none" stroke="#3b82f6" strokeWidth="1.8"/>
-      <circle cx={gcX} cy={gcY} r="5" fill="none" stroke="#fbbf24" strokeWidth="1.5"/>
-      <text x={gcX+7} y={gcY+4} fontSize="8" fill="#fbbf24" fontWeight="600">黃金交叉</text>
-      <line x1="10" y1={H-7} x2="22" y2={H-7} stroke="rgba(148,163,184,0.4)" strokeWidth="1.5"/>
-      <text x="25" y={H-4} fontSize="8" fill="#64748b">股價</text>
-      <line x1="50" y1={H-7} x2="62" y2={H-7} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="4 2"/>
-      <text x="65" y={H-4} fontSize="8" fill="#f59e0b">MA5</text>
-      <line x1="87" y1={H-7} x2="99" y2={H-7} stroke="#3b82f6" strokeWidth="1.5"/>
-      <text x="102" y={H-4} fontSize="8" fill="#3b82f6">MA20</text>
+      <path d={priceL} fill="none" stroke="rgba(148,163,184,0.4)" strokeWidth="2"/>
+      <path d={ma5L}   fill="none" stroke="#f59e0b" strokeWidth="2.2" strokeDasharray="5 2"/>
+      <path d={ma20L}  fill="none" stroke="#3b82f6" strokeWidth="2.2"/>
+      <circle cx={gcX} cy={gcY} r="6" fill="none" stroke="#fbbf24" strokeWidth="2"/>
+      <text x={gcX+9} y={gcY+4} fontSize="11" fill="#fbbf24" fontWeight="600">黃金交叉</text>
+      <line x1="10" y1={H-8} x2="24" y2={H-8} stroke="rgba(148,163,184,0.4)" strokeWidth="2"/>
+      <text x="28" y={H-4} fontSize="11" fill="#64748b">股價</text>
+      <line x1="62" y1={H-8} x2="76" y2={H-8} stroke="#f59e0b" strokeWidth="2" strokeDasharray="4 2"/>
+      <text x="80" y={H-4} fontSize="11" fill="#f59e0b">MA5</text>
+      <line x1="108" y1={H-8} x2="122" y2={H-8} stroke="#3b82f6" strokeWidth="2"/>
+      <text x="126" y={H-4} fontSize="11" fill="#3b82f6">MA20</text>
     </svg>
   )
 }
 
 function RSIVis() {
-  const W=260, barY=38, barH=30
+  const W=296, barY=46, barH=44
   const toX = v => 14 + v*(W-28)/100
   const zones = [
     { x:0,  w:30, col:'rgba(239,68,68,0.20)',  lbl:'超賣', lc:'#ef4444' },
@@ -96,25 +94,25 @@ function RSIVis() {
     { x:70, w:30, col:'rgba(34,197,94,0.20)',   lbl:'超買', lc:'#22c55e' },
   ]
   return (
-    <svg viewBox={`0 0 ${W} 90`} width="100%" height="90" style={{ display:'block' }}>
+    <svg viewBox={`0 0 ${W} 120`} width="100%" height="116" style={{ display:'block' }}>
       {zones.map(z => (
         <rect key={z.lbl} x={toX(z.x)} y={barY} width={(W-28)*z.w/100}
-          height={barH} fill={z.col} rx={z.x===0 || z.x===70 ? 3 : 0}/>
+          height={barH} fill={z.col} rx={z.x===0 || z.x===70 ? 4 : 0}/>
       ))}
-      <rect x={toX(0)} y={barY} width={W-28} height={barH} fill="none" stroke="rgba(100,116,139,0.35)" strokeWidth="1" rx="3"/>
+      <rect x={toX(0)} y={barY} width={W-28} height={barH} fill="none" stroke="rgba(100,116,139,0.35)" strokeWidth="1.2" rx="4"/>
       {[0,30,50,70,100].map(m => (
-        <text key={m} x={toX(m)} y={barY-6} textAnchor="middle" fontSize="8.5"
+        <text key={m} x={toX(m)} y={barY-9} textAnchor="middle" fontSize="11"
           fill="#64748b" fontFamily="monospace">{m}</text>
       ))}
       {[{v:22,lbl:'超賣',col:'#ef4444'},{v:78,lbl:'超買',col:'#22c55e'}].map(({v,lbl,col}) => (
         <g key={v}>
-          <circle cx={toX(v)} cy={barY+barH/2} r="7" fill={col} opacity="0.9"/>
-          <text x={toX(v)} y={barY+barH+13} textAnchor="middle" fontSize="8.5" fill={col} fontWeight="600">{lbl}</text>
+          <circle cx={toX(v)} cy={barY+barH/2} r="10" fill={col} opacity="0.9"/>
+          <text x={toX(v)} y={barY+barH+17} textAnchor="middle" fontSize="11" fill={col} fontWeight="700">{lbl}</text>
         </g>
       ))}
       {zones.map(z => (
-        <text key={z.lbl+'t'} x={toX(z.x + z.w/2)} y={barY+barH/2+4}
-          textAnchor="middle" fontSize="9" fill={z.lc} fontWeight="600" opacity="0.7">{z.lbl}</text>
+        <text key={z.lbl+'t'} x={toX(z.x + z.w/2)} y={barY+barH/2+5}
+          textAnchor="middle" fontSize="12" fill={z.lc} fontWeight="700" opacity="0.85">{z.lbl}</text>
       ))}
     </svg>
   )
@@ -124,27 +122,27 @@ function MACDVis() {
   const macd = [-3,-2.5,-1.5,-0.5,0.2,1,1.5,1.2,0.6,0,-0.8,-0.5]
   const sig  = [-2.8,-2.6,-2,-1.2,-0.4,0.4,0.9,1.1,0.9,0.4,-0.3,-0.4]
   const hist = macd.map((v,i) => v - sig[i])
-  const W=260, H=100, mid=48
+  const W=296, H=124, mid=58
   const xs = macd.map((_,i) => 18 + i*(W-36)/(macd.length-1))
-  const sy  = v => mid - v*11
+  const sy  = v => mid - v*14
   const lp  = pts => pts.reduce((a,p,i) => a+(i===0?'M':'L')+`${xs[i].toFixed(1)},${sy(p).toFixed(1)} `,'')
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display:'block' }}>
       <line x1="14" y1={mid} x2={W-6} y2={mid} stroke="rgba(100,116,139,0.3)" strokeWidth="1" strokeDasharray="3 3"/>
       {hist.map((v,i) => (
-        <rect key={i} x={xs[i]-7} y={v>0?sy(v):mid} width="14"
-          height={Math.abs(v)*11} fill={v>0?'rgba(34,197,94,0.5)':'rgba(239,68,68,0.5)'} rx="1.5"/>
+        <rect key={i} x={xs[i]-9} y={v>0?sy(v):mid} width="18"
+          height={Math.abs(v)*14} fill={v>0?'rgba(34,197,94,0.55)':'rgba(239,68,68,0.55)'} rx="2"/>
       ))}
-      <path d={lp(macd)} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d={lp(sig)}  fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="5 2"/>
-      <circle cx={xs[4]} cy={sy(0.2)} r="4.5" fill="none" stroke="#fbbf24" strokeWidth="1.5"/>
-      <text x={xs[4]+7} y={sy(0.2)+3} fontSize="7.5" fill="#fbbf24" fontWeight="600">交叉</text>
-      <line x1="14" y1={H-7} x2="26" y2={H-7} stroke="#3b82f6" strokeWidth="2"/>
-      <text x="30" y={H-4} fontSize="8" fill="#3b82f6">MACD</text>
-      <line x1="68" y1={H-7} x2="80" y2={H-7} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2"/>
-      <text x="84" y={H-4} fontSize="8" fill="#f59e0b">訊號線</text>
-      <rect x="122" y={H-11} width="9" height="6" fill="rgba(34,197,94,0.6)" rx="1"/>
-      <text x="134" y={H-4} fontSize="8" fill="#64748b">柱狀圖</text>
+      <path d={lp(macd)} fill="none" stroke="#3b82f6" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d={lp(sig)}  fill="none" stroke="#f59e0b" strokeWidth="2" strokeDasharray="5 2"/>
+      <circle cx={xs[4]} cy={sy(0.2)} r="5.5" fill="none" stroke="#fbbf24" strokeWidth="2"/>
+      <text x={xs[4]+9} y={sy(0.2)+4} fontSize="11" fill="#fbbf24" fontWeight="600">交叉</text>
+      <line x1="14" y1={H-8} x2="28" y2={H-8} stroke="#3b82f6" strokeWidth="2.4"/>
+      <text x="32" y={H-4} fontSize="11" fill="#3b82f6">MACD</text>
+      <line x1="80" y1={H-8} x2="94" y2={H-8} stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 2"/>
+      <text x="98" y={H-4} fontSize="11" fill="#f59e0b">訊號線</text>
+      <rect x="144" y={H-13} width="11" height="8" fill="rgba(34,197,94,0.6)" rx="1.5"/>
+      <text x="159" y={H-4} fontSize="11" fill="#64748b">柱狀圖</text>
     </svg>
   )
 }
@@ -157,22 +155,22 @@ function VIXVis() {
     {label:'危機', range:'> 40', col:'#ef4444'},
   ]
   return (
-    <svg viewBox="0 0 260 72" width="100%" height="72" style={{ display:'block' }}>
+    <svg viewBox="0 0 296 106" width="100%" height="100" style={{ display:'block' }}>
       {zones.map((z,i) => (
         <g key={z.label}>
-          <rect x={14+i*58} y={14} width="54" height="32" rx="6"
-            fill={z.col} opacity="0.12" stroke={z.col} strokeWidth="1" strokeOpacity="0.5"/>
-          <text x={41+i*58} y={27} textAnchor="middle" fontSize="12" fontWeight="700" fill={z.col}>{z.label}</text>
-          <text x={41+i*58} y={40} textAnchor="middle" fontSize="8.5" fill="#64748b" fontFamily="monospace">{z.range}</text>
+          <rect x={14+i*67} y={14} width="63" height="52" rx="8"
+            fill={z.col} opacity="0.13" stroke={z.col} strokeWidth="1.4" strokeOpacity="0.6"/>
+          <text x={45+i*67} y={36} textAnchor="middle" fontSize="15" fontWeight="700" fill={z.col}>{z.label}</text>
+          <text x={45+i*67} y={54} textAnchor="middle" fontSize="11" fill="#64748b" fontFamily="monospace">{z.range}</text>
         </g>
       ))}
-      <text x="130" y="62" textAnchor="middle" fontSize="8" fill="#475569">← VIX 數值 →</text>
+      <text x="148" y="84" textAnchor="middle" fontSize="11" fill="#475569">← VIX 數值 →</text>
     </svg>
   )
 }
 
 function FGVis() {
-  const W=260, cx=130, cy=82, r=62
+  const W=296, cx=148, cy=90, r=70
   const zones = [
     {a1:-180,a2:-144,col:'#ef4444',lbl:'極恐'},
     {a1:-144,a2:-108,col:'#f97316',lbl:'恐慌'},
@@ -187,55 +185,54 @@ function FGVis() {
     return `M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`
   }
   const needleA = -90
-  const nx = cx + 50*Math.cos(needleA*Math.PI/180)
-  const ny = cy + 50*Math.sin(needleA*Math.PI/180)
+  const nx = cx + 58*Math.cos(needleA*Math.PI/180)
+  const ny = cy + 58*Math.sin(needleA*Math.PI/180)
   return (
-    <svg viewBox={`0 0 ${W} 98`} width="100%" height="98" style={{ display:'block' }}>
+    <svg viewBox={`0 0 ${W} 114`} width="100%" height="110" style={{ display:'block' }}>
       {zones.map(z => (
-        <path key={z.lbl} d={arc(z.a1,z.a2,r)} fill={z.col} opacity="0.18"
-          stroke={z.col} strokeOpacity="0.5" strokeWidth="0.5"/>
+        <path key={z.lbl} d={arc(z.a1,z.a2,r)} fill={z.col} opacity="0.20"
+          stroke={z.col} strokeOpacity="0.6" strokeWidth="0.8"/>
       ))}
       {zones.map(z => {
         const midA = (z.a1+z.a2)/2*Math.PI/180
-        const tx=cx+(r-18)*Math.cos(midA), ty=cy+(r-18)*Math.sin(midA)
-        return <text key={z.lbl+'t'} x={tx.toFixed(1)} y={(ty+3).toFixed(1)}
-          textAnchor="middle" fontSize="8" fill={z.col} fontWeight="700">{z.lbl}</text>
+        const tx=cx+(r-22)*Math.cos(midA), ty=cy+(r-22)*Math.sin(midA)
+        return <text key={z.lbl+'t'} x={tx.toFixed(1)} y={(ty+4).toFixed(1)}
+          textAnchor="middle" fontSize="11" fill={z.col} fontWeight="700">{z.lbl}</text>
       })}
       <line x1={cx} y1={cy} x2={nx.toFixed(1)} y2={ny.toFixed(1)}
-        stroke="#f1f5f9" strokeWidth="2.5" strokeLinecap="round"/>
-      <circle cx={cx} cy={cy} r="5" fill="#1e293b" stroke="#f1f5f9" strokeWidth="1.5"/>
-      <text x={cx} y={cy+16} textAnchor="middle" fontSize="8.5" fill="#94a3b8">50 · 中性</text>
+        stroke="#f1f5f9" strokeWidth="3" strokeLinecap="round"/>
+      <circle cx={cx} cy={cy} r="6" fill="#1e293b" stroke="#f1f5f9" strokeWidth="2"/>
+      <text x={cx} y={cy+20} textAnchor="middle" fontSize="11" fill="#94a3b8">50 · 中性</text>
     </svg>
   )
 }
 
 function CycleVis() {
   const phases = [
-    {label:'復甦', sub:'希望萌發', x:130, y:16,  col:'#3b82f6'},
-    {label:'繁榮', sub:'樂觀貪婪', x:226, y:62,  col:'#22c55e'},
-    {label:'衰退', sub:'焦慮恐慌', x:192, y:128, col:'#f97316'},
-    {label:'蕭條', sub:'絕望賣出', x:68,  y:128, col:'#ef4444'},
-    {label:'築底', sub:'懷疑觀望', x:34,  y:62,  col:'#a855f7'},
+    {label:'復甦', sub:'希望萌發', x:148, y:16,  col:'#3b82f6'},
+    {label:'繁榮', sub:'樂觀貪婪', x:258, y:72,  col:'#22c55e'},
+    {label:'衰退', sub:'焦慮恐慌', x:220, y:158, col:'#f97316'},
+    {label:'蕭條', sub:'絕望賣出', x:76,  y:158, col:'#ef4444'},
+    {label:'築底', sub:'懷疑觀望', x:38,  y:72,  col:'#a855f7'},
   ]
   return (
-    <svg viewBox="0 0 260 156" width="100%" height="150" style={{ display:'block' }}>
-      <ellipse cx="130" cy="84" rx="82" ry="54" fill="none"
-        stroke="rgba(100,116,139,0.22)" strokeWidth="1.5" strokeDasharray="5 3"/>
+    <svg viewBox="0 0 296 200" width="100%" height="190" style={{ display:'block' }}>
+      <ellipse cx="148" cy="102" rx="98" ry="66" fill="none"
+        stroke="rgba(100,116,139,0.22)" strokeWidth="2" strokeDasharray="6 3"/>
       {phases.map((p,i) => {
         const n = phases[(i+1)%phases.length]
-        return <line key={i} x1={p.x} y1={p.y+6} x2={n.x} y2={n.y+6}
-          stroke="rgba(100,116,139,0.18)" strokeWidth="1.2"/>
+        return <line key={i} x1={p.x} y1={p.y+8} x2={n.x} y2={n.y+8}
+          stroke="rgba(100,116,139,0.18)" strokeWidth="1.4"/>
       })}
       {phases.map(p => (
         <g key={p.label}>
-          <circle cx={p.x} cy={p.y+4} r="22" fill={p.col} opacity="0.1"
-            stroke={p.col} strokeWidth="1.4" strokeOpacity="0.5"/>
-          <text x={p.x} y={p.y+2} textAnchor="middle" fontSize="11" fontWeight="700" fill={p.col}>{p.label}</text>
-          <text x={p.x} y={p.y+14} textAnchor="middle" fontSize="7.5" fill="#64748b">{p.sub}</text>
+          <circle cx={p.x} cy={p.y+6} r="26" fill={p.col} opacity="0.1"
+            stroke={p.col} strokeWidth="1.8" strokeOpacity="0.6"/>
+          <text x={p.x} y={p.y+4} textAnchor="middle" fontSize="13" fontWeight="700" fill={p.col}>{p.label}</text>
+          <text x={p.x} y={p.y+18} textAnchor="middle" fontSize="10" fill="#64748b">{p.sub}</text>
         </g>
       ))}
-      {/* Arrow hint */}
-      <text x="130" y="88" textAnchor="middle" fontSize="9" fill="#475569" opacity="0.6">循環</text>
+      <text x="148" y="106" textAnchor="middle" fontSize="12" fill="#475569" opacity="0.6">循環</text>
     </svg>
   )
 }

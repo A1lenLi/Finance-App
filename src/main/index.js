@@ -5,6 +5,59 @@ import { request } from 'https'
 import { deflateSync } from 'zlib'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
+
+// ── Default watchlist groups ──────────────────────────────────────────────────
+const DEFAULT_GROUPS = [
+  {
+    id: 'etf', name: 'ETF精選', color: '#6366f1',
+    symbols: [
+      { symbol: '0050.TW', name: '元大台灣50' },
+      { symbol: '0056.TW', name: '元大高益' },
+      { symbol: '00878.TW', name: '國泰永續高益' },
+      { symbol: 'SPY', name: 'SPDR S&P 500 ETF' },
+      { symbol: 'QQQ', name: 'Invesco QQQ' },
+      { symbol: 'VT', name: 'Vanguard Total World' },
+      { symbol: 'ARKK', name: 'ARK Innovation ETF' }
+    ]
+  },
+  {
+    id: 'tech', name: '科技巨頭', color: '#0ea5e9',
+    symbols: [
+      { symbol: 'AAPL', name: 'Apple' },
+      { symbol: 'MSFT', name: 'Microsoft' },
+      { symbol: 'GOOGL', name: 'Alphabet' },
+      { symbol: 'META', name: 'Meta Platforms' },
+      { symbol: 'AMZN', name: 'Amazon' },
+      { symbol: 'TSLA', name: 'Tesla' },
+      { symbol: '2330.TW', name: '台積電' }
+    ]
+  },
+  {
+    id: 'ai', name: 'AI概念', color: '#a855f7',
+    symbols: [
+      { symbol: 'NVDA', name: 'NVIDIA' },
+      { symbol: 'AMD', name: 'AMD' },
+      { symbol: 'INTC', name: 'Intel' },
+      { symbol: 'SMCI', name: 'Super Micro Computer' },
+      { symbol: '2303.TW', name: '聯電' },
+      { symbol: '3034.TW', name: '光立碩' },
+      { symbol: '6669.TW', name: '緯节科' }
+    ]
+  },
+  {
+    id: 'mfg', name: '生產製造', color: '#f59e0b',
+    symbols: [
+      { symbol: '2317.TW', name: '鸿海精密' },
+      { symbol: '2382.TW', name: '廣達' },
+      { symbol: '2308.TW', name: '台联電' },
+      { symbol: '3711.TW', name: '日月光電' },
+      { symbol: 'HON', name: 'Honeywell' },
+      { symbol: 'CAT', name: 'Caterpillar' },
+      { symbol: 'MMM', name: '3M' }
+    ]
+  }
+]
+
 // ── Tray icon (16x16 solid #3b82f6 PNG generated at runtime) ──────────────
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256)
@@ -64,11 +117,13 @@ const SYMBOLS_CONFIG = {
   ],
   forex: [
     { symbol: 'USDTWD=X', name: 'USD / TWD' },
-    { symbol: 'EURUSD=X', name: 'EUR / USD' },
-    { symbol: 'USDJPY=X', name: 'USD / JPY' },
-    { symbol: 'GBPUSD=X', name: 'GBP / USD' },
-    { symbol: 'USDCNY=X', name: 'USD / CNY' },
-    { symbol: 'AUDUSD=X', name: 'AUD / USD' }
+    { symbol: 'EURTWD=X', name: 'EUR / TWD' },
+    { symbol: 'JPYTWD=X', name: 'JPY / TWD' },
+    { symbol: 'GBPTWD=X', name: 'GBP / TWD' },
+    { symbol: 'CNYTWD=X', name: 'CNY / TWD' },
+    { symbol: 'AUDTWD=X', name: 'AUD / TWD' },
+    { symbol: 'HKDTWD=X', name: 'HKD / TWD' },
+    { symbol: 'SGDTWD=X', name: 'SGD / TWD' }
   ],
   commodities: [
     { symbol: 'CL=F', name: '原油 WTI' },
@@ -267,6 +322,22 @@ async function getTWStocks() {
   return _twCache || []
 }
 
+// ── Text sanitizer ────────────────────────────────────────────────────────
+// Removes zero-width chars, BOM, lone surrogates, and non-BMP code points
+// that common Windows CJK fonts can't render (shows as ██).
+function sanitizeText(str) {
+  if (!str) return str
+  return str
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')    // control chars
+    .replace(/[\uFEFF\u200B\u200C\u200D\u2028\u2029\u00A0]/g, '') // BOM + zero-width
+    .replace(/\uFFFD|\uFFFE|\uFFFF/g, '')                      // replacement chars
+    .replace(/[\uD800-\uDFFF]/g, '')                            // lone surrogates
+    .replace(/[\u{10000}-\u{10FFFF}]/gu, '')                   // non-BMP (emoji etc)
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
+
 // ── Persistence helpers ───────────────────────────────────────────────────
 function readJson(filename, fallback) {
   const p = join(app.getPath('userData'), filename)
@@ -276,6 +347,128 @@ function readJson(filename, fallback) {
 
 function writeJson(filename, data) {
   writeFileSync(join(app.getPath('userData'), filename), JSON.stringify(data), 'utf-8')
+}
+
+// ── Article content fetcher ───────────────────────────────────────────────
+function fetchArticleText(url, timeoutMs = 6000) {
+  return new Promise((resolve) => {
+    const done = (text) => { clearTimeout(timer); resolve(text) }
+    const timer = setTimeout(() => done(''), timeoutMs)
+
+    try {
+      const { hostname, pathname, search } = new URL(url)
+      const isHttps = url.startsWith('https')
+      const mod = isHttps ? require('https') : require('http')
+      const req = mod.get({
+        hostname, path: pathname + search,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'zh-TW,zh;q=0.9',
+        },
+      }, (res) => {
+        // Follow one redirect
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          req.destroy()
+          return fetchArticleText(res.headers.location, timeoutMs).then(done)
+        }
+        let html = ''
+        res.setEncoding('utf8')
+        res.on('data', c => { html += c; if (html.length > 200000) req.destroy() })
+        res.on('end', () => {
+          // Extract main body text
+          let text = html
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/<header[\s\S]*?<\/header>/gi, '')
+            .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+            .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+            // Pull out <article> or main content blocks if present
+            .replace(/.*?(<article[\s\S]*?<\/article>|<main[\s\S]*?<\/main>|<div[^>]*class="[^"]*(?:content|article|body|news)[^"]*"[\s\S]*?<\/div>).*/si, '$1')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+            .replace(/&#\d+;/g, ' ').replace(/&[a-z]+;/g, ' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim()
+            .slice(0, 4000)
+          done(sanitizeText(text))
+        })
+        res.on('error', () => done(''))
+      })
+      req.on('error', () => done(''))
+    } catch { done('') }
+  })
+}
+
+// ── AI helpers ────────────────────────────────────────────────────────────
+// OpenAI-compatible POST (Groq / any compatible endpoint)
+function callOpenAICompat(hostname, path, apiKey, model, messages, maxTokens = 1500) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ model, max_tokens: maxTokens, messages })
+    const opts = {
+      hostname, path, method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    }
+    const req = request(opts, res => {
+      let raw = ''
+      res.on('data', c => raw += c)
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(raw)
+          if (parsed.error) reject(new Error(parsed.error.message || JSON.stringify(parsed.error)))
+          else resolve(parsed.choices?.[0]?.message?.content || '')
+        } catch (e) { reject(e) }
+      })
+    })
+    req.on('error', reject)
+    req.write(body)
+    req.end()
+  })
+}
+
+function callGroq(apiKey, messages) {
+  // qwen-qwq-32b: Qwen reasoning model, far better Traditional Chinese quality.
+  // Uses 6144 max_tokens because QwQ emits a <think>...</think> chain before the JSON.
+  // Free tier limit: 6000 tokens/req (input + output combined).
+  // Input ~2000 tokens (prompt + 1200-char article) + 1500 output = ~3500, safe margin.
+  return callOpenAICompat('api.groq.com', '/openai/v1/chat/completions', apiKey, 'qwen/qwen3-32b', messages, 1500)
+}
+
+function callClaude(apiKey, userPrompt) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 700,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+    const opts = {
+      hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+    }
+    const req = request(opts, res => {
+      let raw = ''
+      res.on('data', c => raw += c)
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(raw)
+          if (parsed.error) reject(new Error(parsed.error.message))
+          else resolve(parsed.content?.[0]?.text || '')
+        } catch (e) { reject(e) }
+      })
+    })
+    req.on('error', reject)
+    req.write(body)
+    req.end()
+  })
 }
 
 // ── Window & Tray ─────────────────────────────────────────────────────────
@@ -309,9 +502,9 @@ function createWindow() {
 }
 
 // ── App lifecycle ─────────────────────────────────────────────────────────
-// Point GPU disk-cache to our own folder so Chromium never collides with
-// another instance and eliminates the cache_util_win.cc ACCESS_DENIED noise.
-app.commandLine.appendSwitch('disk-cache-dir', join(app.getPath('userData'), 'gpu-cache'))
+// Disable Chromium's GPU shader disk-cache to prevent cache_util_win.cc /
+// gpu_disk_cache.cc ACCESS_DENIED (0x5) spam on Windows.
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.finance.dashboard')
@@ -334,6 +527,24 @@ app.whenReady().then(() => {
   ipcMain.handle('fetch-market-data', async () => fetchAllMarketData())
   ipcMain.handle('fetch-sparklines', async (_, symbols) => fetchSparklines(symbols))
   ipcMain.handle('get-watchlist', () => readJson('watchlist.json', []))
+  ipcMain.handle('get-groups', () => {
+    const saved = readJson('groups.json', null)
+    if (saved) return saved
+    // First launch: seed watchlist with all default symbols
+    const wl = readJson('watchlist.json', [])
+    const existing = new Set(wl.map(x => x.symbol))
+    const toAdd = []
+    for (const g of DEFAULT_GROUPS) {
+      for (const s of g.symbols) {
+        if (!existing.has(s.symbol)) { existing.add(s.symbol); toAdd.push(s) }
+      }
+    }
+    if (toAdd.length) writeJson('watchlist.json', [...wl, ...toAdd])
+    writeJson('groups.json', DEFAULT_GROUPS)
+    return DEFAULT_GROUPS
+  })
+  ipcMain.handle('save-groups', (_, groups) => { writeJson('groups.json', groups); return true })
+
   ipcMain.handle('save-watchlist', (_, list) => { writeJson('watchlist.json', list); return true })
   ipcMain.handle('fetch-watchlist-data', async () => {
     const list = readJson('watchlist.json', [])
@@ -564,8 +775,8 @@ app.whenReady().then(() => {
       const list = data?.items?.data ?? []
       return list.map(n => ({
         id: n.newsId,
-        title: n.title,
-        summary: n.summary ?? '',
+        title: sanitizeText(n.title),
+        summary: sanitizeText(n.summary ?? ''),
         publishAt: n.publishAt,
         coverUrl: n.coverSrc?.l?.src ?? n.coverSrc?.m?.src ?? n.coverSrc?.s?.src ?? null,
         url: `https://news.cnyes.com/news/id/${n.newsId}`,
@@ -588,8 +799,8 @@ app.whenReady().then(() => {
         const thumb = resolutions.find(r => r.tag === 'original') ?? resolutions[0] ?? null
         return {
           id: n.uuid,
-          title: n.title,
-          summary: n.summary ?? '',
+          title: sanitizeText(n.title),
+          summary: sanitizeText(n.summary ?? ''),
           publisher: n.publisher ?? '',
           publishAt: n.providerPublishTime,
           url: n.link,
@@ -620,7 +831,127 @@ app.whenReady().then(() => {
 
   ipcMain.handle('get-settings', () => readJson('settings.json', { refreshInterval: 5 * 60 * 1000 }))
   ipcMain.handle('save-settings', (_, s) => { writeJson('settings.json', s); return true })
-  ipcMain.handle('toggle-fullscreen', () => {
+
+  ipcMain.handle('analyze-news', async (_, { title, summary, url }) => {
+    const clean = s => (s || '').replace(/\s/g, '')
+    const settings = readJson('settings.json', {})
+    const groqKey   = clean(settings.groqKey      || process.env.GROQ_API_KEY      || '')
+    const claudeKey = clean(settings.anthropicKey  || process.env.ANTHROPIC_API_KEY || '')
+    if (!groqKey && !claudeKey) return { error: 'no_key' }
+
+    // Fetch full article text when available
+    let articleText = (summary || '').trim()
+    if (url) {
+      const fetched = await fetchArticleText(url)
+      if (fetched.length > articleText.length + 100) articleText = fetched
+    }
+    const contentSource = articleText.length > (summary || '').length + 100 ? '全文' : '摘要'
+
+    const SYSTEM = [
+      '你是專業財經分析師。無論輸入文章是什麼語言，你的所有回應都必須使用繁體中文。',
+      '規則：',
+      '1. 只輸出一個 JSON 物件，絕對不加任何說明、前言、標題或 markdown。',
+      '2. JSON 所有字串值必須是繁體中文（公司名稱可保留英文縮寫，如 NVDA、TSMC）。',
+      '3. 所有字串值必須在同一行，不可在字串內插入換行符號。',
+      '4. 不使用 em-dash、彎引號、星號等特殊符號，改用普通中文標點。',
+    ].join('\n')
+
+    const USER = [
+      `請用繁體中文深度分析以下新聞${contentSource}，只回傳 JSON，不要有任何其他文字：`,
+      '',
+      `標題：${title}`,
+      `內容：${articleText.slice(0, 1200) || '（無）'}`,
+      '',
+      '輸出格式（所有值必須是繁體中文單行字串，不得有換行）：',
+      '{',
+      '  "core": "核心摘要：3-4句完整描述事件本質與市場意義",',
+      '  "detail": "深度解讀：3-4句說明背景脈絡、影響機制、與更大趨勢的關聯",',
+      '  "sentiment": "多頭 或 空頭 或 中性",',
+      '  "sentimentReason": "情緒判斷理由：2句話說明為何這樣判斷，並指出關鍵數據或觸媒",',
+      '  "affected": ["個股附代碼如輝達(NVDA)或台積電(2330.TW)，板塊直接寫，最多6項"],',
+      '  "catalysts": ["正向催化因素1", "因素2", "因素3"],',
+      '  "risks": ["主要風險1", "風險2", "風險3"],',
+      '  "points": ["投資要點1", "要點2", "要點3", "要點4", "要點5"]',
+      '}',
+    ].join('\n')
+
+    function repairJSON(s) {
+      s = s.replace(/,\s*$/, '').replace(/"[^"]*$/, '')
+      let braces = 0, brackets = 0, inStr = false, esc = false
+      for (const c of s) {
+        if (esc) { esc = false; continue }
+        if (c === '\\' && inStr) { esc = true; continue }
+        if (c === '"') { inStr = !inStr; continue }
+        if (inStr) continue
+        if (c === '{') braces++; else if (c === '}') braces--
+        if (c === '[') brackets++; else if (c === ']') brackets--
+      }
+      while (brackets > 0) { s += ']'; brackets-- }
+      while (braces  > 0)  { s += '}'; braces-- }
+      return s
+    }
+
+    function parseAI(text) {
+      // Strip QwQ / DeepSeek reasoning chain before JSON extraction
+      const stripped = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+      const target = stripped || text
+
+      // Normalise common LLM punctuation using Unicode escapes to avoid source encoding issues
+      const normalised = target
+        .replace(/\u201C|\u201D/g, '"')
+        .replace(/\u2018|\u2019/g, "'")
+        .replace(/\u2014|\u2013/g, '-')
+
+      const full = normalised.match(/\{[\s\S]*\}/)
+      const src  = full ? full[0] : (normalised.match(/\{[\s\S]*/) || [''])[0]
+      try { return JSON.parse(src) } catch {}
+      const s2 = src.replace(/"((?:[^"\\]|\\.)*)"/g, (_, i) =>
+        '"' + i.replace(/[\n\r\t]/g, ' ').replace(/[\x00-\x1F\x7F]/g, '') + '"')
+      try { return JSON.parse(s2) } catch {}
+      try { return JSON.parse(repairJSON(s2)) } catch {}
+      return null
+    }
+
+    // Clean each string value — allowlist keeps valid Chinese financial chars
+    function cleanResult(data) {
+      if (!data) return data
+      const KEEP = /[\u0020-\u007E\u00B0-\u00FF\u2010-\u2027\u3000-\u303F\u3040-\u30FF\u4E00-\u9FFF\uF900-\uFAFF\uFF00-\uFFEF]/
+      const cs = s => {
+        if (typeof s !== 'string') return s
+        const filtered = [...s].filter(ch => KEEP.test(ch)).join('')
+        return filtered.replace(/\s{2,}/g, ' ').trim()
+      }
+      const ca = arr => Array.isArray(arr) ? arr.map(cs).filter(Boolean) : []
+      return {
+        core:            cs(data.core),
+        detail:          cs(data.detail),
+        sentiment:       cs(data.sentiment),
+        sentimentReason: cs(data.sentimentReason),
+        affected:        ca(data.affected),
+        catalysts:       ca(data.catalysts),
+        risks:           ca(data.risks),
+        points:          ca(data.points),
+      }
+    }
+
+    try {
+      let text
+      if (groqKey) {
+        text = await callGroq(groqKey, [
+          { role: 'system', content: SYSTEM },
+          { role: 'user',   content: USER   },
+        ])
+      } else {
+        text = await callClaude(claudeKey, SYSTEM + '\n\n' + USER)
+      }
+      const raw = parseAI(text)
+      if (!raw) return { error: 'parse', raw: text }
+      return { ok: true, data: cleanResult(raw), provider: groqKey ? 'groq' : 'claude', source: contentSource }
+    } catch (e) {
+      return { error: 'api', message: e.message }
+    }
+  })
+    ipcMain.handle('toggle-fullscreen', () => {
     if (!mainWindow) return false
     const next = !mainWindow.isFullScreen()
     mainWindow.setFullScreen(next)
@@ -629,6 +960,7 @@ app.whenReady().then(() => {
 
   // Pre-warm TW stock name cache in background
   getTWStocks().catch(() => {})
+
 
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 })

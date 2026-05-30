@@ -195,7 +195,7 @@ const NAV_ITEMS = [
   { id:'learn',   label:'投資百科',   icon:'book',   section:'learn' },
 ]
 
-function NavIcon({ name }) {
+function NavIcon({ name, watch = false }) {
   const paths = {
     pulse: <path d="M3 12h3l3-8 4 16 3-8h5"/>,
     chart: <><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></>,
@@ -203,7 +203,7 @@ function NavIcon({ name }) {
     coin:  <><circle cx="12" cy="12" r="9"/><path d="M9 9c1-1 5-1 5 1s-5 1-5 3 4 2 5 1"/></>,
     bank:  <><path d="M3 21h18"/><path d="M5 10h14M5 21V10M9 21V10M15 21V10M19 21V10"/><path d="M3 8l9-5 9 5"/></>,
     crypto:<><circle cx="12" cy="12" r="9"/><path d="M9 8v8h3a3 3 0 1 0 0-6H9m0 3h4"/></>,
-    star:  <path d="M12 3l3 6 6 1-4 4 1 6-6-3-6 3 1-6-4-4 6-1z"/>,
+    star:  <path d="M12 3l3 6 6 1-4 4 1 6-6-3-6 3 1-6-4-4 6-1z" fill={watch ? 'currentColor' : 'none'}/>,
     cal:   <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></>,
     gauge: <><path d="M3 12a9 9 0 0 1 18 0"/><path d="M12 12l5-3"/></>,
     news:  <><rect x="3" y="5" width="14" height="14" rx="1"/><path d="M17 8h4v9a2 2 0 0 1-2 2H8M7 9h6M7 13h6M7 17h3"/></>,
@@ -218,8 +218,8 @@ export function LeftNav({ active, onSelect, collapsed }) {
       <div className="ln-brand"><LogoMark size={22}/>{!collapsed && <span className="ln-brand-name">財經脈動<i>·</i><em>Worldwide Finance</em></span>}</div>
       <nav className="ln-list">
         {NAV_ITEMS.map(n => n.sep ? <div key={n.id} className="ln-sep"/> : (
-          <button key={n.id} className={`ln-item ${active === n.id ? 'active' : ''}`} onClick={() => onSelect(n)}>
-            <span className="ln-icon"><NavIcon name={n.icon}/></span>
+          <button key={n.id} className={`ln-item ${active === n.id ? 'active' : ''} ${n.id === 'watch' ? 'ln-item-watch' : ''}`} onClick={() => onSelect(n)}>
+            <span className="ln-icon"><NavIcon name={n.icon} watch={n.id === 'watch'}/></span>
             {!collapsed && <span className="ln-label">{n.label}</span>}
           </button>
         ))}
@@ -551,8 +551,6 @@ export function SentimentBar() {
   const conv = useConv()
   const s = data.sentiment
   if (!s) return null
-  const total = s.advDec.adv + s.advDec.dec + s.advDec.unch
-  const advPct = s.advDec.adv / total * 100, decPct = s.advDec.dec / total * 100
   const fgAngle = s.fearGreed.val / 100 * 270 - 135
   return (
     <section className="senti panel">
@@ -574,259 +572,46 @@ export function SentimentBar() {
           <div className="s-val">{s.vix.val}<span className="s-chg" style={{ color:conv.downColor }}>{s.vix.chg > 0 ? '+' : '−'}{Math.abs(s.vix.chg).toFixed(2)}</span></div>
           <div className="s-sub">市場處於 <em>{s.vix.state}</em> 波動區間</div>
         </div>
-        <div className="s-card s-card-wide">
-          <div className="s-label"><GTerm>漲跌家數</GTerm></div>
-          <div className="ad-row">
-            <span style={{ color:conv.upColor, fontFamily:'var(--font-mono)', fontWeight:700 }}>▲ {s.advDec.adv}</span>
-            <span style={{ color:'var(--text-muted)', fontFamily:'var(--font-mono)' }}>· {s.advDec.unch}</span>
-            <span style={{ color:conv.downColor, fontFamily:'var(--font-mono)', fontWeight:700 }}>▼ {s.advDec.dec}</span>
+        {s.advDec && (() => {
+          const total = s.advDec.adv + s.advDec.dec + s.advDec.unch
+          const advPct = s.advDec.adv / total * 100, decPct = s.advDec.dec / total * 100
+          return (
+            <div className="s-card s-card-wide">
+              <div className="s-label"><GTerm>漲跌家數</GTerm></div>
+              <div className="ad-row">
+                <span style={{ color:conv.upColor, fontFamily:'var(--font-mono)', fontWeight:700 }}>▲ {s.advDec.adv}</span>
+                <span style={{ color:'var(--text-muted)', fontFamily:'var(--font-mono)' }}>· {s.advDec.unch}</span>
+                <span style={{ color:conv.downColor, fontFamily:'var(--font-mono)', fontWeight:700 }}>▼ {s.advDec.dec}</span>
+              </div>
+              <div className="ad-bar">
+                <span style={{ width:`${advPct}%`, background:conv.upColor }}/>
+                <span style={{ width:`${100-advPct-decPct}%`, background:'var(--text-muted)' }}/>
+                <span style={{ width:`${decPct}%`, background:conv.downColor }}/>
+              </div>
+              <div className="s-sub">新高 <em style={{ color:conv.upColor }}>{s.highsLows?.newHigh ?? '--'}</em> · 新低 <em style={{ color:conv.downColor }}>{s.highsLows?.newLow ?? '--'}</em></div>
+            </div>
+          )
+        })()}
+        {s.putCall && (
+          <div className="s-card">
+            <div className="s-label"><GTerm>Put/Call 比</GTerm></div>
+            <div className="s-val">{s.putCall.val}<span className="s-chg" style={{ color:conv.upColor }}>{s.putCall.chg > 0 ? '+' : '−'}{Math.abs(s.putCall.chg).toFixed(2)}</span></div>
+            <div className="s-sub">避險需求 <em>溫和</em></div>
           </div>
-          <div className="ad-bar">
-            <span style={{ width:`${advPct}%`, background:conv.upColor }}/>
-            <span style={{ width:`${100-advPct-decPct}%`, background:'var(--text-muted)' }}/>
-            <span style={{ width:`${decPct}%`, background:conv.downColor }}/>
+        )}
+        {s.breadth && (
+          <div className="s-card">
+            <div className="s-label"><GTerm>市場廣度</GTerm></div>
+            <div className="s-val">{s.breadth.val}<i style={{ fontSize:16, fontStyle:'normal' }}>%</i></div>
+            <div className="s-sub">個股 <em>高於 200MA</em></div>
           </div>
-          <div className="s-sub">新高 <em style={{ color:conv.upColor }}>{s.highsLows.newHigh}</em> · 新低 <em style={{ color:conv.downColor }}>{s.highsLows.newLow}</em></div>
-        </div>
-        <div className="s-card">
-          <div className="s-label"><GTerm>Put/Call 比</GTerm></div>
-          <div className="s-val">{s.putCall.val}<span className="s-chg" style={{ color:conv.upColor }}>{s.putCall.chg > 0 ? '+' : '−'}{Math.abs(s.putCall.chg).toFixed(2)}</span></div>
-          <div className="s-sub">避險需求 <em>溫和</em></div>
-        </div>
-        <div className="s-card">
-          <div className="s-label"><GTerm>市場廣度</GTerm></div>
-          <div className="s-val">{s.breadth.val}<i style={{ fontSize:16, fontStyle:'normal' }}>%</i></div>
-          <div className="s-sub">個股 <em>高於 200MA</em></div>
-        </div>
+        )}
       </div>
     </section>
   )
 }
 
-// ── Modals ────────────────────────────────────────────────────
-export function ModalShell({ children, onClose, width = 640, kicker, title, subtitle }) {
-  useEffect(() => {
-    const h = e => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', h)
-    return () => window.removeEventListener('keydown', h)
-  }, [onClose])
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className="overlay-card" style={{ width }} onClick={e => e.stopPropagation()}>
-        <button className="overlay-x" onClick={onClose} aria-label="關閉">×</button>
-        {(kicker || title) && <div className="overlay-head">{kicker && <div className="overlay-kicker">{kicker}</div>}{title && <h2 className="overlay-h">{title}</h2>}{subtitle && <div className="overlay-sub">{subtitle}</div>}</div>}
-        <div className="overlay-body">{children}</div>
-      </div>
-    </div>
-  )
-}
-
-function SetRow({ label, hint, children }) {
-  return <div className="set-row"><div className="set-row-l"><div className="set-row-label">{label}</div>{hint && <div className="set-row-hint">{hint}</div>}</div><div className="set-row-r">{children}</div></div>
-}
-function SetSeg({ value, options, onChange }) {
-  return <div className="set-seg" role="tablist">{options.map(o => <button key={o.value} role="tab" aria-selected={value === o.value} className={`set-seg-btn ${value === o.value ? 'on' : ''}`} onClick={() => onChange(o.value)}>{o.label}</button>)}</div>
-}
-function SetSwatches({ value, options, onChange }) {
-  return <div className="set-sw-list">{options.map(o => <button key={o.value} className={`set-sw ${value === o.value ? 'on' : ''}`} onClick={() => onChange(o.value)} title={o.label}><span className="set-sw-dot" style={{ background:o.color }}/><span className="set-sw-name">{o.label}</span></button>)}</div>
-}
-function SetSwitch({ value, onChange }) {
-  return <button role="switch" aria-checked={value} className={`set-switch ${value ? 'on' : ''}`} onClick={() => onChange(!value)}><span className="set-switch-thumb"/></button>
-}
-function SetSelect({ value, options, onChange }) {
-  return <div className="set-select-wrap"><select className="set-select" value={value} onChange={e => onChange(e.target.value)}>{options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select><svg width="10" height="6" viewBox="0 0 10 6" className="set-select-caret"><path fill="currentColor" d="M0 0h10L5 6z"/></svg></div>
-}
-
-export function SettingsModal({ t, setTweak, onClose, onReset, themes }) {
-  return (
-    <ModalShell onClose={onClose} width={620} kicker="PREFERENCES" title="設定" subtitle="個人化你的儀表板顯示與互動偏好。所有變更即時生效並自動保存。">
-      <div className="set-list">
-        <div className="set-sect">
-          <div className="set-sect-h"><span className="set-sect-num">01</span><span className="set-sect-name">顯示偏好</span></div>
-          <SetRow label="漲跌色慣例" hint="台股習慣紅漲綠跌；歐美習慣綠漲紅跌。">
-            <SetSeg value={t.convention} onChange={v => setTweak('convention', v)} options={[{ value:'red_up', label:'紅漲綠跌' }, { value:'green_up', label:'綠漲紅跌' }]}/>
-          </SetRow>
-          <SetRow label="主題色" hint="影響強調按鈕、連結與圖表筆觸的主要色相。">
-            <SetSwatches value={t.theme} onChange={v => setTweak('theme', v)} options={[{ value:'blue', label:'海軍藍', color:themes.blue.accent }, { value:'teal', label:'青藍', color:themes.teal.accent }, { value:'amber', label:'琥珀', color:themes.amber.accent }]}/>
-          </SetRow>
-        </div>
-        <div className="set-sect">
-          <div className="set-sect-h"><span className="set-sect-num">02</span><span className="set-sect-name">版面密度</span></div>
-          <SetRow label="資訊密度" hint="調整列高、間距與基礎字級。">
-            <SetSeg value={t.density} onChange={v => setTweak('density', v)} options={[{ value:'compact', label:'密集' }, { value:'regular', label:'標準' }, { value:'comfy', label:'舒適' }]}/>
-          </SetRow>
-          <SetRow label="圖表樣式" hint="詳情頁的預設圖表呈現方式。">
-            <SetSeg value={t.chartType} onChange={v => setTweak('chartType', v)} options={[{ value:'line', label:'折線' }, { value:'area', label:'面積' }, { value:'candle', label:'蠟燭' }]}/>
-          </SetRow>
-        </div>
-        <div className="set-sect">
-          <div className="set-sect-h"><span className="set-sect-num">03</span><span className="set-sect-name">介面元件</span></div>
-          <SetRow label="顯示左側導覽" hint="關閉後可獲得更大主視窗。"><SetSwitch value={t.leftNav} onChange={v => setTweak('leftNav', v)}/></SetRow>
-          <SetRow label="顯示自選清單側欄" hint="右側自選即時報價欄。"><SetSwitch value={t.sidebar} onChange={v => setTweak('sidebar', v)}/></SetRow>
-        </div>
-      </div>
-      <div className="set-foot">
-        <div style={{ flex:1 }}/>
-        <button className="ghost-btn" onClick={onReset}>回復預設</button>
-        <button className="primary-btn" onClick={onClose}>完成</button>
-      </div>
-    </ModalShell>
-  )
-}
-
-export function NewsDetail({ news, onClose }) {
-  const conv = useConv()
-  return (
-    <ModalShell onClose={onClose} width={720} kicker={`${news.tag} · ${news.source} · ${news.time}`} title={news.title}>
-      {news.coverUrl && <img src={news.coverUrl} alt="" style={{ width:'100%', borderRadius:8, marginBottom:16, aspectRatio:'16/9', objectFit:'cover' }}/>}
-      {news.summary && <p className="nd-lead">{news.summary}</p>}
-      {news.impact && (
-        <div className="nd-impact">
-          <div className="nd-impact-label">即時影響</div>
-          <div className="nd-impact-row">
-            <div className="nd-imp-sym">{news.impact.sym}</div>
-            <div className="nd-imp-chg" style={{ color: news.impact.dir > 0 ? conv.upColor : conv.downColor }}>{news.impact.chg}</div>
-            <div style={{ flex:1 }}/><Sparkline seed={101 + (news.impact.sym.length || 3)} dir={news.impact.dir} w={120} h={32} fill/>
-          </div>
-        </div>
-      )}
-      {news.related?.length > 0 && <div className="nd-section"><div className="nd-section-h">相關標的</div><div className="nd-related">{news.related.map(r => <span key={r} className="nd-pill">{r}</span>)}</div></div>}
-      {news.glossary?.length > 0 && <div className="nd-section"><div className="nd-section-h">本則用語</div><div className="nd-gl">{news.glossary.map(t => <GTerm key={t}>{t}</GTerm>)}</div></div>}
-      {news.url && (
-        <div className="nd-foot">
-          <div style={{ flex:1 }}/>
-          <button className="primary-btn" onClick={() => window.api.openExternal(news.url)}>在瀏覽器閱讀全文 →</button>
-        </div>
-      )}
-    </ModalShell>
-  )
-}
-
-export function GlossaryPopup({ term, onClose, onJump }) {
-  const data = useData()
-  const def = data.glossary?.[term]
-  const related = Object.keys(data.glossary || {}).filter(k => k !== term).slice(0, 6)
-  return (
-    <ModalShell onClose={onClose} width={520} kicker="財經百科 · 名詞解釋" title={term}>
-      <p className="gl-def">{def}</p>
-      <div className="gl-related"><div className="gl-related-h">相關詞彙</div><div className="gl-related-chips">{related.map(r => <button key={r} className="gl-chip" onClick={() => onJump(r)}>{r}</button>)}</div></div>
-      <div className="gl-foot"><button className="ghost-btn" onClick={onClose}>知道了</button></div>
-    </ModalShell>
-  )
-}
-
-export function GlossaryIndex({ onClose, onPick }) {
-  const [q, setQ] = useState('')
-  const data = useData()
-  const all = Object.entries(data.glossary || {})
-  const filtered = q ? all.filter(([k, v]) => k.toLowerCase().includes(q.toLowerCase()) || v.includes(q)) : all
-  return (
-    <ModalShell onClose={onClose} width={720} kicker="LEARN" title="財經百科 · 名詞索引" subtitle="點擊任一詞彙查看完整解釋。">
-      <div className="gi-search"><input value={q} onChange={e => setQ(e.target.value)} placeholder="搜尋名詞…"/><span className="gi-count">{filtered.length} 個結果</span></div>
-      <div className="gi-list">
-        {filtered.map(([term, def]) => <button key={term} className="gi-item" onClick={() => onPick(term)}><span className="gi-term">{term}</span><span className="gi-def">{def}</span></button>)}
-        {filtered.length === 0 && <div className="gi-empty">找不到相關詞彙</div>}
-      </div>
-    </ModalShell>
-  )
-}
-
-export function PortfolioModal({ holdings, onSave, onClose }) {
-  const [items, setItems] = useState(holdings)
-  const [newSym, setNewSym] = useState('')
-  const [newQty, setNewQty] = useState('')
-  const [newCost, setNewCost] = useState('')
-  const [looking, setLooking] = useState(false)
-  const [err, setErr] = useState(null)
-
-  const addHolding = async () => {
-    if (!newSym || !newQty || !newCost) return
-    setLooking(true); setErr(null)
-    try {
-      const result = await window.api.lookupSymbol(newSym.trim())
-      if (!result) { setErr('找不到代碼，請確認後重試'); setLooking(false); return }
-      const next = [...items.filter(i => i.rawSym !== result.symbol), {
-        sym: result.symbol, name: result.name, rawSym: result.symbol,
-        qty: parseFloat(newQty), avgCost: parseFloat(newCost)
-      }]
-      setItems(next)
-      setNewSym(''); setNewQty(''); setNewCost('')
-    } catch { setErr('查詢失敗，請稍後再試') }
-    finally { setLooking(false) }
-  }
-
-  return (
-    <ModalShell onClose={onClose} width={600} kicker="PORTFOLIO" title="投資組合" subtitle="記錄您的持倉，系統將自動計算即時損益。資料僅儲存於本機裝置。">
-      <div className="port-list">
-        {items.map(h => (
-          <div key={h.rawSym} className="port-row">
-            <div className="port-sym"><span className="port-s">{h.sym}</span><span className="port-n">{h.name}</span></div>
-            <div className="port-nums"><span>數量 {h.qty.toLocaleString()}</span><span>均價 {h.avgCost.toFixed(2)}</span></div>
-            <button className="port-x" onClick={() => setItems(items.filter(i => i.rawSym !== h.rawSym))}>×</button>
-          </div>
-        ))}
-        {items.length === 0 && <div className="port-empty">尚無持倉，請在下方新增</div>}
-      </div>
-      <div className="port-add">
-        <div className="port-add-h">新增持倉</div>
-        <div className="port-add-row">
-          <input placeholder="代碼（如 AAPL）" value={newSym} onChange={e => { setNewSym(e.target.value); setErr(null) }} style={{ flex:2 }}/>
-          <input placeholder="數量" type="number" value={newQty} onChange={e => setNewQty(e.target.value)} style={{ flex:1 }}/>
-          <input placeholder="均價" type="number" value={newCost} onChange={e => setNewCost(e.target.value)} style={{ flex:1.5 }} onKeyDown={e => e.key === 'Enter' && addHolding()}/>
-          <button className="primary-btn" onClick={addHolding} disabled={!newSym || !newQty || !newCost || looking}>{looking ? '查詢中…' : '新增'}</button>
-        </div>
-        {err && <div style={{ color:'var(--red)', fontSize:12, marginTop:4 }}>{err}</div>}
-      </div>
-      <div className="set-foot">
-        <div style={{ flex:1 }}/>
-        <button className="ghost-btn" onClick={onClose}>取消</button>
-        <button className="primary-btn" onClick={() => { onSave(items); onClose() }}>儲存</button>
-      </div>
-    </ModalShell>
-  )
-}
-
-export function AlertModal({ item, alerts, onSave, onClose }) {
-  const conv = useConv()
-  const myAlerts = alerts.filter(a => a.rawSym === item.rawSym)
-  const [direction, setDirection] = useState('above')
-  const [price, setPrice] = useState('')
-
-  const add = () => {
-    const p = parseFloat(price)
-    if (isNaN(p)) return
-    onSave([...alerts, { id: Date.now(), sym: item.sym, name: item.name, rawSym: item.rawSym, direction, price: p }])
-    setPrice('')
-  }
-
-  return (
-    <ModalShell onClose={onClose} width={460} kicker="ALERT" title={`設定提醒 · ${item.sym}`} subtitle={`現價 ${item.val}，當觸及目標價時系統將提示。`}>
-      <div className="alt-list">
-        {myAlerts.map(a => (
-          <div key={a.id} className="alt-row">
-            <span className="alt-dir" style={{ color: a.direction === 'above' ? conv.upColor : conv.downColor }}>{a.direction === 'above' ? '突破' : '跌破'}</span>
-            <span className="alt-price">{a.price.toFixed(2)}</span>
-            <div style={{ flex:1 }}/>
-            <button className="port-x" onClick={() => onSave(alerts.filter(al => al.id !== a.id))}>×</button>
-          </div>
-        ))}
-        {myAlerts.length === 0 && <div className="port-empty">尚無設定的提醒</div>}
-      </div>
-      <div className="alt-add">
-        <div className="alt-add-row">
-          <div className="set-seg" style={{ flexShrink:0 }}>
-            <button className={`set-seg-btn ${direction === 'above' ? 'on' : ''}`} onClick={() => setDirection('above')}>突破</button>
-            <button className={`set-seg-btn ${direction === 'below' ? 'on' : ''}`} onClick={() => setDirection('below')}>跌破</button>
-          </div>
-          <input type="number" placeholder="目標價" value={price} onChange={e => setPrice(e.target.value)} style={{ flex:1 }} onKeyDown={e => e.key === 'Enter' && add()}/>
-          <button className="primary-btn" onClick={add} disabled={!price}>新增</button>
-        </div>
-      </div>
-      <div className="set-foot"><div style={{ flex:1 }}/><button className="ghost-btn" onClick={onClose}>關閉</button></div>
-    </ModalShell>
-  )
-}
-
+// ── PortfolioBand ─────────────────────────────────────────────
 export function PortfolioBand({ onManage }) {
   const data = useData()
   const conv = useConv()
@@ -857,26 +642,23 @@ export function PortfolioBand({ onManage }) {
   )
 }
 
-const QUICK_PICKS = [
-  { symbol:'2330.TW', name:'台積電',    exchange:'TWSE' },
-  { symbol:'2317.TW', name:'鴻海',      exchange:'TWSE' },
-  { symbol:'2454.TW', name:'聯發科',    exchange:'TWSE' },
-  { symbol:'0050.TW', name:'元大台灣50',exchange:'TWSE' },
-  { symbol:'NVDA',    name:'NVIDIA',    exchange:'NASDAQ' },
-  { symbol:'AAPL',    name:'Apple',     exchange:'NASDAQ' },
-  { symbol:'BTC-USD', name:'Bitcoin',   exchange:'Crypto' },
-]
-
-// ── Watchlist Page ────────────────────────────────────────────
-export function WatchlistPage({ items, onAdd, onSelect, onRemove }) {
+export function WatchlistPage({ items, onAdd, onSelect, onRemove, groups = [], onManageGroups, activeGroup = null, onActiveGroupChange }) {
   const conv = useConv()
   const data = useData()
   const [sort, setSort] = useState({ col: 'default', dir: 1 })
+  const setActiveGroup = onActiveGroupChange ?? (() => {})
 
-  const upCount   = items.filter(i => i.chg > 0).length
-  const downCount = items.filter(i => i.chg < 0).length
+  const symGroupMap = {}
+  groups.forEach(g => g.symbols.forEach(s => { if (!symGroupMap[s.symbol]) symGroupMap[s.symbol] = g }))
 
-  const sorted = [...items].sort((a, b) => {
+  const visibleItems = activeGroup
+    ? items.filter(it => activeGroup.symbols.some(s => s.symbol === it.rawSym))
+    : items
+
+  const upCount   = visibleItems.filter(i => i.chg > 0).length
+  const downCount = visibleItems.filter(i => i.chg < 0).length
+
+  const sorted = [...visibleItems].sort((a, b) => {
     if (sort.col === 'default') return 0
     if (sort.col === 'name')  return a.name.localeCompare(b.name, 'zh-TW') * sort.dir
     if (sort.col === 'price') return ((parseFloat(a.val) || 0) - (parseFloat(b.val) || 0)) * sort.dir
@@ -897,7 +679,6 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove }) {
 
   return (
     <div className="wlp">
-      {/* 頁首 */}
       <div className="wlp-head">
         <div className="wlp-head-l">
           <div className="wlp-kicker">WATCHLIST</div>
@@ -905,7 +686,7 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove }) {
         </div>
         <div className="wlp-stats">
           <div className="wlp-stat">
-            <span className="wlp-stat-n">{items.length}</span>
+            <span className="wlp-stat-n">{visibleItems.length}</span>
             <span className="wlp-stat-l">項目</span>
           </div>
           <div className="wlp-stat-sep"/>
@@ -918,19 +699,41 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove }) {
             <span className="wlp-stat-l">下跌</span>
           </div>
         </div>
-        <button className="primary-btn" onClick={onAdd}>＋ 新增標的</button>
+        <div className="wlp-head-btns">
+          {onManageGroups && <button className="ghost-btn" onClick={onManageGroups}>群組設定</button>}
+          <button className="primary-btn" onClick={onAdd}>＋ 新增標的</button>
+        </div>
       </div>
 
-      {items.length === 0 ? (
+      {groups.length > 0 && (
+        <div className="wlp-groups">
+          <button className={`wlp-gtab ${activeGroup === null ? 'on' : ''}`}
+            onClick={() => setActiveGroup(null)}>
+            全部<span className="wlp-gtab-ct">{items.length}</span>
+          </button>
+          {groups.map(g => (
+            <button key={g.id}
+              className={`wlp-gtab ${activeGroup?.id === g.id ? 'on' : ''}`}
+              onClick={() => setActiveGroup(activeGroup?.id === g.id ? null : g)}>
+              <span className="wlp-gtab-dot" style={{ background: g.color }}/>
+              {g.name}
+              <span className="wlp-gtab-ct">
+                {items.filter(it => g.symbols.some(s => s.symbol === it.rawSym)).length}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {visibleItems.length === 0 ? (
         <div className="wlp-empty">
           <div className="wlp-empty-icon">☆</div>
-          <div className="wlp-empty-title">尚無自選標的</div>
+          <div className="wlp-empty-title">{activeGroup ? `${activeGroup.name} 尚無已載入的標的` : '尚無自選標的'}</div>
           <div className="wlp-empty-sub">新增您想追蹤的股票、ETF 或加密貨幣</div>
           <button className="primary-btn" style={{ marginTop: 20 }} onClick={onAdd}>新增第一個標的</button>
         </div>
       ) : (
         <div className="wlp-table">
-          {/* 欄位標題 */}
           <div className="wlp-thead">
             <SortTh col="name">名稱 / 代碼</SortTh>
             <SortTh col="price" align="right">最新價</SortTh>
@@ -938,140 +741,43 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove }) {
             <div className="wlp-th">今日走勢</div>
             <div className="wlp-th"/>
           </div>
-          {/* 資料列 */}
           <div className="wlp-tbody">
-            {sorted.map(it => (
-              <div key={it.sym} className="wlp-row" onClick={() => onSelect(it)}>
-                {/* 名稱 + 代碼 */}
-                <div className="wlp-td wlp-td-name">
-                  <span className="wlp-sym">{it.sym}</span>
-                  <span className="wlp-name">{it.name}</span>
+            {sorted.map(it => {
+              const grp = symGroupMap[it.rawSym]
+              return (
+                <div key={it.sym} className="wlp-row" onClick={() => onSelect(it)}>
+                  <div className="wlp-td wlp-td-name">
+                    {grp && <span className="wlp-row-dot" style={{ background: grp.color }}/>}
+                    <span className="wlp-sym">{it.sym}</span>
+                    <span className="wlp-name">{it.name}</span>
+                  </div>
+                  <div className="wlp-td wlp-td-price">
+                    <span className="wlp-price">{it.val}</span>
+                  </div>
+                  <div className="wlp-td wlp-td-chg">
+                    <span className="wlp-chg-badge" style={{
+                      background: it.chg > 0 ? 'rgba(34,197,94,0.12)' : it.chg < 0 ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.05)',
+                      color: it.chg > 0 ? conv.upColor : it.chg < 0 ? conv.downColor : 'var(--text-muted)'
+                    }}>
+                      {it.chg > 0 ? '▲' : it.chg < 0 ? '▼' : '·'}&nbsp;{Math.abs(it.chg).toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="wlp-td wlp-td-spark">
+                    <Sparkline seed={it.seed} dir={it.chg >= 0 ? 1 : -1} chg={it.chg}
+                      prices={data.sparklines?.[it.rawSym] ?? null} w={150} h={34} fill/>
+                  </div>
+                  <div className="wlp-td wlp-td-act">
+                    <button className="wlp-remove-btn"
+                      onClick={e => { e.stopPropagation(); onRemove(it) }}>
+                      移除
+                    </button>
+                  </div>
                 </div>
-                {/* 最新價 */}
-                <div className="wlp-td wlp-td-price">
-                  <span className="wlp-price">{it.val}</span>
-                </div>
-                {/* 漲跌幅 */}
-                <div className="wlp-td wlp-td-chg">
-                  <span className="wlp-chg-badge" style={{
-                    background: it.chg > 0 ? 'rgba(34,197,94,0.12)' : it.chg < 0 ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.05)',
-                    color: it.chg > 0 ? conv.upColor : it.chg < 0 ? conv.downColor : 'var(--text-muted)'
-                  }}>
-                    {it.chg > 0 ? '▲' : it.chg < 0 ? '▼' : '·'}&nbsp;{Math.abs(it.chg).toFixed(2)}%
-                  </span>
-                </div>
-                {/* 走勢 */}
-                <div className="wlp-td wlp-td-spark">
-                  <Sparkline seed={it.seed} dir={it.chg >= 0 ? 1 : -1} chg={it.chg}
-                    prices={data.sparklines?.[it.rawSym] ?? null} w={150} h={34} fill/>
-                </div>
-                {/* 移除 */}
-                <div className="wlp-td wlp-td-act">
-                  <button className="wlp-remove-btn"
-                    onClick={e => { e.stopPropagation(); onRemove(it) }}>
-                    移除
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
     </div>
-  )
-}
-
-export function AddWatchModal({ onClose, onAdd, existingSymbols = [] }) {
-  const [q, setQ] = useState('')
-  const [results, setResults] = useState([])
-  const [searching, setSearching] = useState(false)
-  const [err, setErr] = useState(null)
-
-  const isIn = (sym) => existingSymbols.includes(sym)
-
-  const addItem = (r) => {
-    if (isIn(r.symbol)) return   // 已存在，不重複加入
-    onAdd({ sym: r.symbol, name: r.name, val: '--', chg: 0, seed: symbolSeed(r.symbol), rawSym: r.symbol })
-    onClose()
-  }
-
-  const search = async () => {
-    const s = q.trim()
-    if (!s) return
-    setSearching(true); setErr(null); setResults([])
-    try {
-      let list = []
-      // Primary: searchSymbol (TWSE cache for Chinese/digits, Yahoo for English)
-      try { list = await window.api.searchSymbol(s) } catch {}
-      // Fallback: treat input as a direct ticker code
-      if (!list?.length) {
-        try {
-          const r = await window.api.lookupSymbol(s)
-          if (r?.symbol) list = [{ symbol: r.symbol, name: r.name, exchange: '', type: 'EQUITY' }]
-        } catch {}
-      }
-      if (!list?.length) setErr('找不到相關結果，請嘗試其他關鍵字或代碼')
-      else setResults(list)
-    } catch { setErr('搜尋失敗，請稍後再試') }
-    finally { setSearching(false) }
-  }
-
-  return (
-    <ModalShell onClose={onClose} width={500} kicker="自選清單" title="新增標的" subtitle="輸入代碼（AAPL、2330.TW）或中文名稱搜尋。">
-      <div className="aw-search-row">
-        <input
-          value={q}
-          onChange={e => { setQ(e.target.value); setErr(null); setResults([]) }}
-          placeholder="代碼 或 名稱，例如：台積電、NVDA"
-          autoFocus
-          onKeyDown={e => e.key === 'Enter' && search()}
-          style={{ flex:1 }}
-        />
-        <button className="primary-btn" onClick={search} disabled={!q.trim() || searching}>
-          {searching ? '搜尋中…' : '搜尋'}
-        </button>
-      </div>
-      {err && <div style={{ color:'var(--red)', fontSize:12, marginTop:6 }}>{err}</div>}
-      {results.length > 0 && (
-        <div className="aw-results">
-          {results.map(r => {
-            const already = isIn(r.symbol)
-            return (
-              <button key={r.symbol} className={`aw-result-row${already ? ' aw-result-row--in' : ''}`}
-                onClick={() => addItem(r)} disabled={already}>
-                <div className="aw-res-l">
-                  <span className="aw-res-sym">{r.symbol}</span>
-                  <span className="aw-res-name">{r.name}</span>
-                </div>
-                <div className="aw-res-r">
-                  {r.exchange && <span className="aw-res-exch">{r.exchange}</span>}
-                  <span className={`aw-res-add${already ? ' aw-res-add--in' : ''}`}>
-                    {already ? '✓ 已在自選' : '＋'}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      )}
-      <div className="aw-quick">
-        <div className="aw-quick-h">熱門</div>
-        <div className="aw-quick-grid">
-          {QUICK_PICKS.map(r => {
-            const already = isIn(r.symbol)
-            return (
-              <button key={r.symbol} className={`aw-qpick${already ? ' aw-qpick--in' : ''}`}
-                onClick={() => addItem(r)} disabled={already} title={already ? '已在自選清單' : r.name}>
-                <span className="aw-qp-sym">{r.symbol}</span>
-                <span className="aw-qp-name">{already ? '✓ 已加入' : r.name}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      <div className="aw-actions">
-        <button className="ghost-btn" onClick={onClose}>取消</button>
-      </div>
-    </ModalShell>
   )
 }

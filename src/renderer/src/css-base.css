@@ -1,0 +1,55 @@
+/* ─────────────────────────────────────────────────────────────
+   Worldwide Finance · Editorial Dashboard
+   Builds on tokens.css from the design system.
+   ───────────────────────────────────────────────────────────── */
+@import url('tokens.css');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15.5px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  overflow: hidden;     /* desktop app — scroll inside .main only */
+}
+
+/* Theme override hooks driven by tweaks */
+.app[data-theme="teal"]   { --accent: #2dd4bf; --accent-2: #14b8a6; --accent-tint: rgba(45,212,191,0.10); }
+.app[data-theme="blue"]   { --accent: #3b82f6; --accent-2: #2563eb; --accent-tint: rgba(59,130,246,0.10); }
+.app[data-theme="amber"]  { --accent: #f59e0b; --accent-2: #d97706; --accent-tint: rgba(245,158,11,0.10); }
+.app:not([data-theme]),
+.app                         { --accent: var(--brand-blue); --accent-2: var(--brand-blue-dark); --accent-tint: var(--blue-tint); }
+
+.app[data-density="compact"] { --pad-card: 12px; --pad-row: 7px; --gap-section: 12px; --base-size: 13px; }
+.app[data-density="regular"] { --pad-card: 16px; --pad-row: 10px; --gap-section: 16px; --base-size: 14px; }
+.app[data-density="comfy"]   { --pad-card: 22px; --pad-row: 14px; --gap-section: 22px; --base-size: 14.5px; }
+
+/* CJK font weighting */
+.app[data-font="balanced"] { --ratio-cjk: 'Noto Sans TC'; }
+.app[data-font="latin"]    { --ratio-cjk: 'Noto Sans TC'; }
+.app[data-font="mono"]     { --ratio-cjk: 'Noto Sans TC'; }
+
+/* ── Shell ─────────────────────────────────────────────────── */
+.app {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 28px 48px 1fr;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "title  title  title"
+    "topbar topbar topbar"
+    "nav    main   watch";
+  background: var(--bg);
+  font-size: var(--base-size);
+  --surface-2: var(--bg-card);
+  --surface-3: var(--bg-hover);
+}
+

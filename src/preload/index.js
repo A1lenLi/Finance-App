@@ -19,7 +19,10 @@ const api = {
   fetchPeers: (symbol) => ipcRenderer.invoke('fetch-peers', symbol),
   fetchChart: (symbol, range, interval) => ipcRenderer.invoke('fetch-chart', symbol, range, interval),
   fetchSentiment: () => ipcRenderer.invoke('fetch-sentiment'),
-  searchSymbol: (query) => ipcRenderer.invoke('search-symbol', query)
+  searchSymbol: (query) => ipcRenderer.invoke('search-symbol', query),
+  analyzeNews: (news) => ipcRenderer.invoke('analyze-news', news),
+  getGroups: () => ipcRenderer.invoke('get-groups'),
+  saveGroups: (groups) => ipcRenderer.invoke('save-groups', groups)
 }
 
 if (process.contextIsolated) {
