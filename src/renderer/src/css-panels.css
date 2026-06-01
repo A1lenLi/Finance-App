@@ -2,11 +2,34 @@
 .main {
   grid-area: main;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 18px 22px 80px;
   display: flex; flex-direction: column;
   gap: var(--gap-section);
 }
 .main > * { flex-shrink: 0; }
+
+/* ── QuickMarket strip ───────────────────────────────────── */
+.qm-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+}
+.qm-cell {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 12px 14px; border-radius: 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  cursor: pointer; text-align: left; transition: border-color 0.15s;
+}
+.qm-cell:hover { border-color: var(--accent); }
+.qm-sym { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; }
+.qm-val { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--text); }
+.qm-chg { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+
+/* ── Sub-page wrapper ────────────────────────────────────── */
+.subpage { display: flex; flex-direction: column; gap: var(--gap-section); }
+.subpage-head { padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.subpage-kicker { font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: var(--accent); margin-bottom: 4px; }
+.subpage-title { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.025em; }
+.subpage-sub { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
 
 /* ── Panel primitive ─────────────────────────────────────── */
 .panel {
@@ -339,7 +362,16 @@
 /* ── NEWS FEED ──────────────────────────────────────────── */
 .nf-head { border-bottom: 1px solid var(--border); }
 .nf-head .section-title { padding-bottom: var(--pad-card); }
-.nf-tabs { display: flex; gap: 2px; }
+.nf-tabs { display: flex; align-items: center; gap: 2px; }
+.nf-refresh {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 6px; margin-left: 4px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+}
+.nf-refresh:hover { color: var(--accent); border-color: var(--accent); }
+.nf-refresh:disabled { opacity: 0.4; cursor: default; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .nf-tab {
   font: inherit; font-size: 13.5px; font-weight: 600;
   color: var(--text-muted);
@@ -442,8 +474,8 @@
 /* ── CALENDAR ───────────────────────────────────────────── */
 .cal-body { padding: 4px var(--pad-card) var(--pad-card); }
 .cal-group {
-  display: grid; grid-template-columns: 90px 1fr;
-  gap: 14px; padding: 12px 0;
+  display: grid; grid-template-columns: 76px 1fr;
+  gap: 8px; padding: 8px 0;
   border-bottom: 1px dashed rgba(30,41,59,0.6);
 }
 .cal-group:last-child { border-bottom: none; }
@@ -458,7 +490,7 @@
 .cd-day {
   font-size: 12.5px; color: var(--text-muted);
 }
-.cal-items { display: flex; flex-direction: column; gap: 6px; }
+.cal-items { display: flex; flex-direction: column; gap: 3px; }
 .cal-row {
   display: grid;
   grid-template-columns: 56px 64px 1fr auto auto;
@@ -496,7 +528,7 @@
 /* ── SENTIMENT ──────────────────────────────────────────── */
 .senti-body {
   display: grid;
-  grid-template-columns: 220px 1fr 1fr 1fr 1fr;
+  grid-template-columns: 220px repeat(auto-fit, minmax(160px, 1fr));
   gap: 1px;
   background: var(--border);
   border-top: 1px solid var(--border);
@@ -529,7 +561,7 @@
 .s-sub em { font-style: normal; color: var(--text); font-weight: 600; }
 
 .fg-gauge {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: flex-end; gap: 6px;
 }
 .fg-val {
   display: flex; flex-direction: column; gap: 2px;

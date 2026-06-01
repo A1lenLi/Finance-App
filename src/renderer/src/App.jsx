@@ -3,8 +3,9 @@ import {
   ConventionCtx, GlossaryCtx, DataContext,
   symbolSeed, timeAgo,
   LeftNav, WatchRail, TopBar,
-  Hero, PulseStrip, MarketMatrix, NewsFeed,
-  PortfolioBand, WatchlistPage,
+  Hero, PulseStrip, MarketMatrix, NewsFeed, QuickMarket,
+  PortfolioBand, SentimentBar, Calendar,
+  SentimentPage, CalendarPage, WatchlistPage,
 } from './Finance'
 import {
   SettingsModal, NewsDetail, GlossaryPopup, GlossaryIndex,
@@ -16,13 +17,56 @@ import { SymbolPage } from './SymbolPage'
 // ═══════════════════════════════════════════════════════════════
 // STATIC REFERENCE DATA
 // ═══════════════════════════════════════════════════════════════
-const MOCK_CALENDAR = [
-  { date:'05.20', day:'三', time:'02:00', region:'US', evt:'Fed 主席 Powell 演講',  imp:3, prev:'—',    est:'—'    },
-  { date:'05.20', day:'三', time:'20:30', region:'US', evt:'4 月成屋銷售',           imp:2, prev:'4.19M', est:'4.22M' },
-  { date:'05.21', day:'四', time:'02:00', region:'US', evt:'FOMC 5 月會議紀要',     imp:3, prev:'—',    est:'—'    },
-  { date:'05.22', day:'五', time:'20:30', region:'US', evt:'上週初領失業金',         imp:2, prev:'231K',  est:'220K'  },
-  { date:'05.22', day:'五', time:'21:45', region:'US', evt:'5 月 PMI 初值',          imp:3, prev:'51.2',  est:'51.5'  },
-]
+const WD = ['日','一','二','三','四','五','六']
+function buildCalendar(daysAhead = 14) {
+  const today = new Date(); today.setHours(0,0,0,0)
+  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + daysAhead)
+  const fmt = d => `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`
+
+  const fixed = [
+    // FOMC 2025
+    { d:new Date(2025,5,18),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2025,6,30),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2025,8,17),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2025,9,29),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2025,11,10), t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    // FOMC 2026
+    { d:new Date(2026,0,28),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2026,2,18),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2026,4,6),   t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2026,5,17),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2026,6,29),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2026,8,16),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2026,9,28),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    { d:new Date(2026,11,9),  t:'02:00', r:'US', evt:'FOMC 利率決議',         imp:3 },
+    // CPI 2026
+    { d:new Date(2026,5,10),  t:'20:30', r:'US', evt:'CPI 消費者物價指數',    imp:3 },
+    { d:new Date(2026,6,14),  t:'20:30', r:'US', evt:'CPI 消費者物價指數',    imp:3 },
+    { d:new Date(2026,7,12),  t:'20:30', r:'US', evt:'CPI 消費者物價指數',    imp:3 },
+    { d:new Date(2026,8,10),  t:'20:30', r:'US', evt:'CPI 消費者物價指數',    imp:3 },
+    { d:new Date(2026,9,14),  t:'20:30', r:'US', evt:'CPI 消費者物價指數',    imp:3 },
+    { d:new Date(2026,10,12), t:'20:30', r:'US', evt:'CPI 消費者物價指數',    imp:3 },
+    { d:new Date(2026,11,10), t:'20:30', r:'US', evt:'CPI 消費者物價指數',    imp:3 },
+    // PCE 2026 (approximate last Friday of month)
+    { d:new Date(2026,5,26),  t:'20:30', r:'US', evt:'PCE 個人消費支出物價', imp:2 },
+    { d:new Date(2026,6,31),  t:'20:30', r:'US', evt:'PCE 個人消費支出物價', imp:2 },
+    { d:new Date(2026,7,28),  t:'20:30', r:'US', evt:'PCE 個人消費支出物價', imp:2 },
+    { d:new Date(2026,8,25),  t:'20:30', r:'US', evt:'PCE 個人消費支出物價', imp:2 },
+  ]
+
+  // NFP — first Friday of each upcoming month
+  for (let i = 0; i < 4; i++) {
+    const base = new Date(today.getFullYear(), today.getMonth() + i, 1)
+    while (base.getDay() !== 5) base.setDate(base.getDate() + 1)
+    fixed.push({ d: new Date(base), t:'20:30', r:'US', evt:'非農就業人數 (NFP)', imp:3 })
+  }
+
+  return fixed
+    .filter(e => e.d >= today && e.d <= cutoff && e.imp === 3)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 6)
+    .map(e => ({ date: fmt(e.d), day: WD[e.d.getDay()], time: e.t, region: e.r, evt: e.evt, imp: e.imp, prev:'—', est:'—' }))
+}
 const GLOSSARY = {
   'FOMC':'聯邦公開市場委員會（Federal Open Market Committee），每年召開 8 次會議，決定聯邦資金利率目標。',
   'bp':'基點（basis point）。1 基點 = 0.01%。常用於描述利率或殖利率的小幅變動。',
@@ -48,8 +92,94 @@ const GLOSSARY = {
   '市場廣度':'衡量上漲股票佔總股票的比例。',
   '降息':'中央銀行調降基準利率。',
   'RSI':'相對強弱指標（Relative Strength Index），衡量超買超賣程度。>70 超買，<30 超賣。',
+
+  // ── 技術分析 ──────────────────────────────────────────────
+  'MA':'移動平均線（Moving Average），將一段時間的收盤價平均，濾除短期雜訊以觀察趨勢。',
+  'EMA':'指數移動平均線，對近期價格給予更高權重，比 MA 反應更快。',
+  'MACD':'移動平均匯聚背離指標，由快線（12EMA）減慢線（26EMA）組成，MACD 線上穿信號線為買訊。',
+  'KD':'隨機指標（Stochastic Oscillator），K 線上穿 D 線為買訊；>80 超買，<20 超賣。',
+  '布林通道':'以 20 日均線為中軌，上下各加減兩個標準差，股價觸及上軌代表相對高點。',
+  '黃金交叉':'短期均線向上穿越長期均線，通常視為買入訊號。',
+  '死亡交叉':'短期均線向下穿越長期均線，通常視為賣出訊號。',
+  '支撐':'股價反覆下跌到某價位後止跌回升，形成買盤聚集的價格區間。',
+  '壓力':'股價反覆上漲到某價位後受阻回落，形成賣壓聚集的價格區間。',
+  '量價背離':'股價創新高但成交量萎縮，或股價創新低但量能放大，暗示趨勢可能反轉。',
+  '跳空缺口':'股價開盤直接跳過前日收盤價，K 線圖上形成的空白區域。',
+  '頭肩頂':'技術分析的反轉型態，由左肩、頭部、右肩組成，頸線跌破為賣訊。',
+  'K線':'蠟燭圖（Candlestick Chart），一根 K 線包含開盤、最高、最低、收盤四個價格。',
+
+  // ── 基本面指標 ────────────────────────────────────────────
+  'EPS':'每股盈餘（Earnings Per Share）= 稅後淨利 ÷ 流通股數，是計算本益比的基礎。',
+  'P/E':'本益比（Price-to-Earnings Ratio）= 股價 ÷ EPS，代表回本所需年數。',
+  'P/B':'市淨率（Price-to-Book Ratio）= 股價 ÷ 每股淨資產，< 1 代表股價低於帳面價值。',
+  'ROE':'股東權益報酬率（Return on Equity）= 稅後淨利 ÷ 股東權益，衡量替股東賺錢的效率。',
+  'ROA':'資產報酬率（Return on Assets）= 稅後淨利 ÷ 總資產，衡量企業運用資產的獲利能力。',
+  '本益比':'P/E Ratio，股價除以每股盈餘，代表市場願意為每元獲利付出的倍數。',
+  '股息殖利率':'年度股息 ÷ 股價 × 100%，反映持股一年的現金報酬率。',
+  '市值':'流通股數 × 股價。分類：小型股 < 20 億美元，中型 20–100 億，大型 > 100 億。',
+  '自由現金流':'營業現金流扣除資本支出後的餘額，代表企業真正可自由運用的現金。',
+  '淨利率':'稅後淨利 ÷ 營收，衡量每賺 100 元收入最終留下多少利潤。',
+  '負債比率':'總負債 ÷ 總資產，過高代表財務槓桿風險大。',
+  '股東權益':'總資產扣除總負債的淨值，代表股東對公司的實質所有權。',
+  '護城河':'企業長期維持競爭優勢的核心能力，如品牌、專利、網路效應、轉換成本。',
+
+  // ── 總體經濟指標 ──────────────────────────────────────────
+  'CPI':'消費者物價指數（Consumer Price Index），衡量民眾日常消費品與服務的物價水準，是衡量通膨的主要指標。',
+  'PCE':'個人消費支出物價指數，聯準會偏好的通膨衡量工具，比 CPI 更能反映消費習慣變化。',
+  'PPI':'生產者物價指數（Producer Price Index），衡量企業端的原物料與中間產品價格，領先 CPI 約 1-2 個月。',
+  'GDP':'國內生產毛額（Gross Domestic Product），一國在特定期間內所有最終產品與服務的市場總價值。',
+  'NFP':'非農就業人數（Non-Farm Payrolls），每月第一個週五發布，是衡量美國就業市場最重要的指標。',
+  '通貨膨脹':'物價持續上漲，貨幣購買力下降。Fed 目標通膨率為 2%。',
+  '通貨緊縮':'物價持續下跌，看似有利但易導致消費遞延與經濟衰退。',
+  '升息':'中央銀行調高基準利率，通常用於對抗通膨，但會增加借貸成本。',
+  'QE':'量化寬鬆（Quantitative Easing），央行購買債券向市場注入資金，壓低長期利率。',
+  'QT':'量化緊縮（Quantitative Tightening），央行縮減資產負債表，回收市場流動性。',
+  '聯準會':'美國聯邦準備系統（Federal Reserve），美國的中央銀行，負責貨幣政策與金融穩定。',
+  '台灣央行':'中華民國中央銀行，負責維持新台幣匯率穩定與物價穩定。',
+  'PMI':'採購經理人指數（Purchasing Managers\' Index），> 50 代表景氣擴張，< 50 代表收縮。',
+  'JOLTS':'職缺與勞動力流動調查，衡量美國勞動市場供需狀況。',
+  '收益率曲線':'不同到期年限的公債殖利率連成的曲線，倒掛（短高長低）通常是衰退前兆。',
+
+  // ── 市場概念 ──────────────────────────────────────────────
+  '多頭':'看好後市、預期股價上漲的市場方向或投資者立場（Bull）。',
+  '空頭':'看壞後市、預期股價下跌的市場方向或投資者立場（Bear）。',
+  '牛市':'市場主要指數從低點上漲 20% 以上，代表長期上升趨勢。',
+  '熊市':'市場主要指數從高點下跌 20% 以上，代表長期下降趨勢。',
+  '回檔':'多頭趨勢中的短期下跌，通常幅度在 10% 以內，與趨勢反轉不同。',
+  '融資':'向券商借錢買股票，放大報酬但同時放大風險。',
+  '融券':'向券商借股票賣出，預期股價下跌後低價買回還券獲利。',
+  '做多':'買入資產，預期價格上漲後賣出獲利。',
+  '做空':'借入資產賣出，預期價格下跌後低價買回獲利。',
+  '停損':'預設最大虧損點，跌破即賣出，避免損失擴大。',
+  '停利':'預設目標獲利點，達到即賣出，落袋為安。',
+  '除權':'公司發放股票股利時，股價依比例調整的程序。',
+  '除息':'公司發放現金股利時，股價依股息金額調整的程序。',
+  '填權':'除權後股價回升至除權前水準。',
+  '主力':'在市場中持有大量籌碼、對股價有顯著影響力的機構或大戶。',
+  '籌碼':'股票的持有分布狀況，籌碼集中代表大戶持股比例高。',
+  '殖利率倒掛':'短期公債殖利率高於長期公債殖利率，歷史上常為衰退先兆。',
+  '流動性':'資產快速轉換為現金的能力，流動性高的資產更容易買賣。',
+  '槓桿':'使用借來的資金擴大投資規模，可放大報酬但風險同步放大。',
+  '避險':'透過反向部位或不相關資產降低投資組合的整體風險。',
+  '再平衡':'定期將投資組合調整回目標配置比例，實現自動低買高賣。',
+  '安全邊際':'以低於內在價值的價格買入，為估值錯誤預留緩衝空間。',
+
+  // ── 加密貨幣 ──────────────────────────────────────────────
+  '區塊鏈':'分散式帳本技術，交易紀錄以區塊串連，不可竄改、無需中介機構。',
+  '減半':'比特幣每 4 年將礦工獎勵減半的機制，歷史上往往在減半後 1 年出現牛市高點。',
+  'DeFi':'去中心化金融（Decentralized Finance），利用智能合約提供借貸、交易等金融服務。',
+  '穩定幣':'與法幣（通常是美元）1:1 掛鉤的加密貨幣，如 USDT、USDC。',
+  '山寨幣':'比特幣以外的加密貨幣統稱（Altcoin），波動性通常高於比特幣。',
+
+  // ── ETF 與基金 ────────────────────────────────────────────
+  'ETF':'指數股票型基金（Exchange-Traded Fund），在交易所上市交易、追蹤特定指數或資產的基金。',
+  '內扣費用':'ETF 或基金每年從資產中扣除的管理費，直接侵蝕報酬，選ETF需優先看此項。',
+  '追蹤誤差':'ETF 實際報酬與追蹤指數報酬的差距，誤差越小代表複製效果越好。',
+  '定期定額':'每月固定時間投入固定金額，平均買入成本、降低時機風險的策略。',
+  '指數投資':'被動複製指數報酬，不主動選股，長期勝過大多數主動基金。',
 }
-const WEEKDAYS = ['日','一','二','三','四','五','六']
+
+const WEEKDAYS = WD
 const BULLET_CFG = [
   { sym:'SPX',     label:'S&P 500' },
   { sym:'NDX',     label:'Nasdaq' },
@@ -135,7 +265,7 @@ function adaptNews(n, i) {
     tier: i === 0 ? 'hero' : i < 4 ? 'major' : 'std',
     tag: classifyNewsTag(n.title),
     title: n.title, summary: n.summary || '',
-    source: '鉅亨網', time: timeAgo(n.publishAt),
+    source: n.source || n.publisher || '鉅亨網', time: timeAgo(n.publishAt),
     related, impact: null, glossary: [],
     url: n.url, coverUrl: n.coverUrl,
   }
@@ -180,9 +310,11 @@ const CONVENTIONS = {
 const TWEAK_DEFAULTS = { theme:'blue', convention:'red_up', density:'regular', chartType:'area', sidebar:true, leftNav:true }
 
 const NAV_BACK_LABEL = {
-  feed:    '今日脈動',
-  indices: '全球股市',
-  forex:   '外匯匯率',
+  feed:      '今日脈動',
+  indices:   '全球股市',
+  forex:     '外匯匯率',
+  sentiment: '市場情緒',
+  calendar:  '財經日曆',
   commod:  '大宗商品',
   treas:   '公債殖利率',
   crypto:  '加密貨幣',
@@ -235,8 +367,10 @@ export default function App() {
   const [watchlistMeta, setWatchlistMeta] = useState([])
   const [watchlistData, setWatchlistData] = useState([])
   const [news, setNews] = useState([])
+  const [newsLoading, setNewsLoading] = useState(false)
   const [groups, setGroups] = useState([])
   const [activeWatchGroup, setActiveWatchGroup] = useState(null)
+  const [calendarData, setCalendarData] = useState(() => buildCalendar())
   const [loading, setLoading] = useState(false)
   const [activeNav, setActiveNav] = useState('feed')
   const [matrixTab, setMatrixTab] = useState('indices')
@@ -245,6 +379,8 @@ export default function App() {
   const [symbolPage, setSymbolPage] = useState(null)
   const [watchlistPage, setWatchlistPage] = useState(false)
   const [learnPage, setLearnPage] = useState(false)
+  const [sentimentPage, setSentimentPage] = useState(false)
+  const [calendarPage, setCalendarPage] = useState(false)
   const [newsModal, setNewsModal] = useState(null)
   const [glossPopup, setGlossPopup] = useState(null)
   const [glossIndex, setGlossIndex] = useState(false)
@@ -282,14 +418,26 @@ export default function App() {
     finally { setLoading(false) }
   }, [])
 
+  const loadNews = useCallback(async () => {
+    setNewsLoading(true)
+    try {
+      const items = await window.api.fetchNewsMulti()
+      if (Array.isArray(items)) setNews(items.map(adaptNews))
+    } catch {
+      try {
+        const items = await window.api.fetchNews('tw_stock')
+        if (items?.length) setNews(items.map(adaptNews))
+      } catch {}
+    } finally { setNewsLoading(false) }
+  }, [])
+
   useEffect(() => {
     window.api.getWatchlist().then(list => setWatchlistMeta(list || []))
     window.api.getGroups().then(g => { if (g?.length) setGroups(g) }).catch(() => {})
     loadMarketData()
-    window.api.fetchNews('tw_stock').then(items => {
-      if (items?.length) setNews(items.map(adaptNews))
-    }).catch(() => {})
+    loadNews()
     window.api.fetchSentiment().then(s => { if (s) setExternalSentiment(s) }).catch(() => {})
+    window.api.fetchEconomicCalendar().then(data => { if (data?.length) setCalendarData(data) }).catch(() => {})
   }, [loadMarketData])
 
   useEffect(() => {
@@ -346,7 +494,16 @@ export default function App() {
       const fgText = fgVal > 75 ? '極度貪婪' : fgVal > 55 ? '貪婪' : fgVal > 45 ? '中性' : fgVal > 25 ? '恐慌' : '極度恐慌'
       fearGreed = { val: fgVal, state: fgVal > 55 ? 'greed' : fgVal > 45 ? 'neutral' : 'fear', text: fgText }
     }
-    return { vix: { val: vixVal, chg: vixChg, state: vixState }, fearGreed }
+    const allItems = [
+      ...(marketData?.indices || []), ...(marketData?.forex || []),
+      ...(marketData?.commodities || []), ...(marketData?.bonds || []),
+      ...(marketData?.crypto || []),
+    ].filter(r => r && !r.error && r.changePercent != null)
+    const adv = allItems.filter(r => r.changePercent > 0).length
+    const dec = allItems.filter(r => r.changePercent < 0).length
+    const unch = allItems.filter(r => r.changePercent === 0).length
+    const advDec = allItems.length > 0 ? { adv, dec, unch } : null
+    return { vix: { val: vixVal, chg: vixChg, state: vixState }, fearGreed, advDec }
   }, [marketData, externalSentiment])
 
   const portfolio = useMemo(() => {
@@ -383,22 +540,27 @@ export default function App() {
     indices, forex, commodities, treasuries,
     crypto: cryptoRows,
     news,
-    calendar: MOCK_CALENDAR,
+    calendar: calendarData,
     sentiment: sentimentData,
     portfolio,
     glossary: GLOSSARY,
     sparklines,
-  }), [todayStory, indices, forex, commodities, treasuries, cryptoRows, sentimentData, portfolio, news, sparklines])
+  }), [todayStory, indices, forex, commodities, treasuries, cryptoRows, sentimentData, portfolio, news, sparklines, calendarData])
 
   const onNavSelect = (item) => {
     setActiveNav(item.id)
     setSymbolPage(null)
+    const resetPages = () => { setWatchlistPage(false); setLearnPage(false); setSentimentPage(false); setCalendarPage(false) }
     if (item.section === 'watch') {
-      setWatchlistPage(true); setLearnPage(false)
+      resetPages(); setWatchlistPage(true)
     } else if (item.section === 'learn') {
-      setLearnPage(true); setWatchlistPage(false)
+      resetPages(); setLearnPage(true)
+    } else if (item.section === 'sentiment') {
+      resetPages(); setSentimentPage(true)
+    } else if (item.section === 'calendar') {
+      resetPages(); setCalendarPage(true)
     } else {
-      setWatchlistPage(false); setLearnPage(false)
+      resetPages()
       if (item.section === 'market') { setMatrixTab(item.tab); scrollTo('section-market') }
       else if (item.section === 'pulse') scrollTo('section-hero')
       else if (item.section === 'news') scrollTo('section-news')
@@ -425,7 +587,21 @@ export default function App() {
             </div>
 
             <TopBar
-              onSearch={q => { if (GLOSSARY[q]) setGlossPopup(q); else setAddModal(true) }}
+              onSearch={async q => {
+                const s = q.trim()
+                if (!s) return
+                if (GLOSSARY[s]) { setGlossPopup(s); return }
+                try {
+                  const r = await window.api.lookupSymbol(s)
+                  if (r?.symbol) {
+                    setSymbolPage({ sym: DISPLAY_SYM[r.symbol] || r.symbol, name: r.name || r.symbol, rawSym: r.symbol, seed: symbolSeed(r.symbol), region: REGION_MAP[r.symbol] })
+                  } else {
+                    setAddModal(true)
+                  }
+                } catch {
+                  setAddModal(true)
+                }
+              }}
               onGlossary={() => setGlossIndex(true)}
               onSettings={() => setSettingsOpen(true)}
               onRefresh={loadMarketData}
@@ -452,10 +628,14 @@ export default function App() {
                   onOpenAlert={setAlertItem}
                   groups={groups}
                   onSaveGroups={newGroups => { setGroups(newGroups); window.api.saveGroups(newGroups).catch(() => {}) }}
-                  backLabel={watchlistPage ? '自選清單' : learnPage ? '投資百科' : (NAV_BACK_LABEL[activeNav] || '上一頁')}
+                  backLabel={watchlistPage ? '自選清單' : learnPage ? '投資百科' : sentimentPage ? '市場情緒' : calendarPage ? '財經日曆' : (NAV_BACK_LABEL[activeNav] || '上一頁')}
                 />
               ) : learnPage ? (
                 <LearnPage/>
+              ) : sentimentPage ? (
+                <SentimentPage/>
+              ) : calendarPage ? (
+                <CalendarPage/>
               ) : watchlistPage ? (
                 <WatchlistPage
                   items={watchlistData}
@@ -471,11 +651,9 @@ export default function App() {
                 <>
                   <div id="section-hero"><Hero onOpenNews={setNewsModal}/></div>
                   <PulseStrip onSelect={setSymbolPage}/>
-                  <div id="section-market">
-                    <MarketMatrix onSelect={setSymbolPage} defaultTab={matrixTab} key={matrixTab}/>
-                  </div>
+                  <QuickMarket onSelect={setSymbolPage}/>
                   <PortfolioBand onManage={() => setPortfolioOpen(true)}/>
-                  <div id="section-news"><NewsFeed onOpen={setNewsModal}/></div>
+                  <div id="section-news"><NewsFeed onOpen={setNewsModal} onRefresh={loadNews} refreshing={newsLoading} limit={5}/></div>
                   <footer style={{ padding:'20px 4px', fontSize:11, color:'var(--text-muted)', textAlign:'center', borderTop:'1px solid var(--border)', marginTop:8 }}>
                     資料來源：Yahoo Finance｜點擊任意項目查看詳情｜<strong style={{ color:'var(--text)' }}>僅供參考，不構成投資建議</strong>
                   </footer>

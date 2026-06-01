@@ -179,6 +179,45 @@ function httpsGet(options) {
   })
 }
 
+function httpsGetText(options) {
+  return new Promise((resolve, reject) => {
+    const req = request(options, res => {
+      const chunks = []
+      res.on('data', c => chunks.push(c))
+      res.on('end', () => {
+        try {
+          if (res.statusCode !== 200) { reject(new Error(`HTTP ${res.statusCode}`)); return }
+          resolve(Buffer.concat(chunks).toString('utf8'))
+        } catch (e) { reject(e) }
+      })
+    })
+    req.on('error', reject)
+    req.end()
+  })
+}
+
+function parseRSS(xml) {
+  const items = []
+  const re = new RegExp('<item[^>]*>([\\s\\S]*?)<\\/item>', 'g')
+  let m
+  while ((m = re.exec(xml)) !== null) {
+    const raw = m[1]
+    const get = tag => {
+      const r = raw.match(new RegExp('<' + tag + '(?:[^>]*)>([\\s\\S]*?)<\\/' + tag + '>', 'i'))
+      return r ? r[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim() : ''
+    }
+    const lm = raw.match(/<link>\s*([^<]+)\s*<\/link>/) || raw.match(/<guid[^>]*>([^<]+)<\/guid>/)
+    const pub = get('pubDate') || get('dc:date')
+    items.push({
+      title: get('title'),
+      summary: get('description').slice(0, 300),
+      url: lm ? lm[1].trim() : '',
+      publishAt: (() => { const ts = pub ? Math.floor(new Date(pub).getTime() / 1000) : NaN; return isNaN(ts) ? Math.floor(Date.now() / 1000) : ts })(),
+    })
+  }
+  return items
+}
+
 /** 從 TWSE/TPEx 快取取中文名稱，找不到回傳 null */
 function twName(symbol) {
   if (!_twCache) return null
@@ -728,6 +767,91 @@ app.whenReady().then(() => {
     } catch {}
     return { cryptoFG, stockFG }
   })
+
+  ipcMain.handle('fetch-economic-calendar', async () => {
+    const settings = readJson('settings.json', {})
+    const key = (settings.finnhubKey || '').trim() || 'd8dv9apr01qhm4ahlou0d8dv9apr01qhm4ahloug'
+    const WD = ['日','一','二','三','四','五','六']
+    const IMP = { high: 3, medium: 2, low: 1 }
+    const EVT_ZH = {
+      'Non-Farm Payrolls': '非農就業人數 (NFP)',
+      'Unemployment Rate': '失業率',
+      'CPI': 'CPI 消費者物價指數',
+      'Core CPI': '核心 CPI',
+      'PPI': 'PPI 生產者物價指數',
+      'Core PPI': '核心 PPI',
+      'PCE': 'PCE 個人消費支出物價',
+      'Core PCE': '核心 PCE',
+      'GDP': 'GDP 國內生產毛額',
+      'Initial Jobless Claims': '初領失業金人數',
+      'Retail Sales': '零售銷售',
+      'Federal Reserve Interest Rate Decision': 'FOMC 利率決議',
+      'FOMC Meeting': 'FOMC 利率決議',
+      'ISM Manufacturing PMI': 'ISM 製造業 PMI',
+      'ISM Services PMI': 'ISM 服務業 PMI',
+      'S&P Global Manufacturing PMI': 'PMI 製造業初值',
+      'S&P Global Composite PMI': 'PMI 綜合初值',
+      'Housing Starts': '新屋開工',
+      'Existing Home Sales': '成屋銷售',
+      'Consumer Confidence': '消費者信心指數',
+      'Trade Balance': '貿易帳',
+      'Industrial Production': '工業生產',
+      'JOLTS Job Openings': 'JOLTS 職缺數',
+      'ADP Employment Change': 'ADP 就業人數',
+      'Fed Chair Powell Speaks': 'Fed 主席 Powell 演講',
+    }
+    const EVT_TIME = {
+      'Non-Farm Payrolls': '20:30',
+      'Unemployment Rate': '20:30',
+      'CPI': '20:30',
+      'Core CPI': '20:30',
+      'PPI': '20:30',
+      'Core PPI': '20:30',
+      'PCE': '20:30',
+      'Core PCE': '20:30',
+      'Initial Jobless Claims': '20:30',
+      'Retail Sales': '20:30',
+      'Federal Reserve Interest Rate Decision': '02:00',
+      'FOMC Meeting': '02:00',
+      'Housing Starts': '20:30',
+      'Existing Home Sales': '22:00',
+      'Consumer Confidence': '22:00',
+      'Trade Balance': '20:30',
+      'Industrial Production': '21:15',
+      'JOLTS Job Openings': '22:00',
+      'ADP Employment Change': '20:15',
+      'GDP': '20:30',
+      'ISM Manufacturing PMI': '22:00',
+      'ISM Services PMI': '22:00',
+    }
+    try {
+      const from = new Date()
+      const to = new Date(); to.setDate(to.getDate() + 21)
+      const pad = n => String(n).padStart(2, '0')
+      const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
+      const data = await httpsGet({
+        hostname: 'finnhub.io',
+        path: `/api/v1/calendar/economic?from=${fmtDate(from)}&to=${fmtDate(to)}&token=${key}`,
+        method: 'GET',
+        headers: { 'User-Agent': HEADERS['User-Agent'], 'Accept': 'application/json' }
+      })
+      const events = (data?.economicCalendar ?? [])
+        .filter(e => e.country === 'US' && e.impact === 'high' && e.time)
+        .map(e => {
+          const dateStr = e.time ? String(e.time).slice(0, 10) : null
+          if (!dateStr) return null
+          const d = new Date(dateStr + 'T12:00:00')
+          if (isNaN(d.getTime())) return null
+          const nameZh = Object.entries(EVT_ZH).find(([en]) => e.event?.includes(en))?.[1] || (e.event || '未知事件')
+          const time = Object.entries(EVT_TIME).find(([en]) => e.event?.includes(en))?.[1] || '—'
+          const imp = IMP[e.impact] ?? 1
+          const fmtD = `${pad(d.getMonth()+1)}.${pad(d.getDate())}`
+          return { date: fmtD, day: WD[d.getDay()], time, region: 'US', evt: nameZh, imp, prev: e.prev ?? '—', est: e.estimate ?? '—' }
+        })
+      const valid = events.filter(Boolean)
+      return valid.length > 0 ? valid : null
+    } catch { return null }
+  })
   ipcMain.handle('open-external', (_, url) => shell.openExternal(url))
 
   ipcMain.handle('fetch-focus-board', async (_, category) => {
@@ -764,7 +888,65 @@ app.whenReady().then(() => {
     } catch { return [] }
   })
 
-  ipcMain.handle('fetch-news', async (_, category) => {
+  ipcMain.handle('fetch-news-multi', async () => {
+    const MIN_SUMMARY = 60
+    const results = await Promise.allSettled([
+      httpsGet({
+        hostname: 'api.cnyes.com',
+        path: '/media/api/v1/newslist/category/tw_stock?limit=40&page=1',
+        method: 'GET',
+        headers: { 'User-Agent': HEADERS['User-Agent'], 'Accept': 'application/json', 'Referer': 'https://www.cnyes.com/' }
+      }).then(data => (data?.items?.data ?? [])
+        .filter(n => (n.summary ?? '').length >= MIN_SUMMARY)
+        .slice(0, 12)
+        .map(n => ({
+          id: String(n.newsId),
+          title: sanitizeText(n.title),
+          summary: sanitizeText(n.summary ?? ''),
+          publishAt: n.publishAt,
+          coverUrl: n.coverSrc?.l?.src ?? n.coverSrc?.m?.src ?? null,
+          url: `https://news.cnyes.com/news/id/${n.newsId}`,
+          source: '鉅亨網', publisher: '鉅亨網',
+        }))),
+
+      httpsGetText({
+        hostname: 'money.udn.com',
+        path: '/rssfeed/news/1001/5607/index.xml',
+        method: 'GET',
+        headers: { 'User-Agent': HEADERS['User-Agent'], 'Accept': 'application/rss+xml' }
+      }).then(xml => parseRSS(xml)
+        .filter(n => n.title && n.title.length >= 12)
+        .slice(0, 8)
+        .map((n, i) => ({
+          id: `udn_${n.publishAt}_${i}`,
+          title: sanitizeText(n.title),
+          summary: sanitizeText(n.summary),
+          publishAt: n.publishAt,
+          coverUrl: null,
+          url: n.url,
+          source: '經濟日報', publisher: '經濟日報',
+        }))),
+    ])
+
+    const seen = new Set()
+    const withImg = []
+    const noImg = []
+    results
+      .filter(r => r.status === 'fulfilled')
+      .flatMap(r => r.value)
+      .filter(n => {
+        if (!n.title || n.title.length < 8 || seen.has(n.title)) return false
+        seen.add(n.title)
+        return true
+      })
+      .sort((a, b) => b.publishAt - a.publishAt)
+      .slice(0, 20)
+      .forEach(n => (n.coverUrl ? withImg : noImg).push(n))
+
+    return [...withImg, ...noImg]
+  })
+
+    ipcMain.handle('fetch-news', async (_, category) => {
     try {
       const data = await httpsGet({
         hostname: 'api.cnyes.com',

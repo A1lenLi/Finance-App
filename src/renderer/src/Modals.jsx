@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
-import { useConv, useData, GTerm, Sparkline, symbolSeed } from './Finance'
+import { useState, useEffect, useContext, useMemo } from 'react'
+import { useConv, useData, GTerm, GlossaryCtx, Sparkline, symbolSeed } from './Finance'
+import { MiniLearnCard, CARDS as LEARN_CARDS } from './Learn'
+import { NEWS_LEARN_MAP } from './SymbolPage'
 
 export function ModalShell({ children, onClose, width = 640, kicker, title, subtitle }) {
   useEffect(() => {
@@ -144,6 +146,35 @@ function extractTicker(text) {
   return null
 }
 
+function useGlossRegex(glossary) {
+  return useMemo(() => {
+    const keys = Object.keys(glossary)
+    if (!keys.length) return null
+    const sorted = keys.sort((a, b) => b.length - a.length)
+    try {
+      const escaped = sorted.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      return new RegExp(`(${escaped.join('|')})`)
+    } catch { return null }
+  }, [glossary])
+}
+
+function GlossText({ children }) {
+  const { open } = useContext(GlossaryCtx)
+  const glossary = useData()?.glossary || {}
+  const re = useGlossRegex(glossary)
+  const text = typeof children === 'string' ? children : ''
+  if (!text || !re) return <>{children}</>
+
+  const parts = text.split(re)
+  return <>
+    {parts.map((p, i) =>
+      glossary[p]
+        ? <button key={i} className="gterm gterm--inline" onClick={e => { e.stopPropagation(); open(p) }}>{p}<sup>?</sup></button>
+        : <span key={i}>{p}</span>
+    )}
+  </>
+}
+
 function AiStockChip({ label, onOpenSymbol }) {
   const [state, setState] = useState('idle')
   const ticker = extractTicker(label.trim())
@@ -187,10 +218,14 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
   const analyse = async () => {
     setAi('loading')
     try {
-      const result = await window.api.analyzeNews({ title: news.title, summary: news.summary, url: news.url })
+      const timer = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
+      const result = await Promise.race([
+        window.api.analyzeNews({ title: news.title, summary: news.summary, url: news.url }),
+        timer
+      ])
       setAi(result)
     } catch (e) {
-      setAi({ error: 'api', message: e.message })
+      setAi({ error: 'api', message: e.message === 'timeout' ? '分析逾時，請稍後再試' : e.message })
     }
   }
 
@@ -239,8 +274,8 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
               <span className="nd-ai-model">{ai.provider === 'groq' ? 'Groq · qwen3-32b' : 'Claude Haiku'} · {ai.source || '摘要'}</span>
               <button className="nd-ai-redo" title="重新分析" onClick={() => setAi(null)}>↺</button>
             </div>
-            <p className="nd-ai-core">{ai.data.core}</p>
-            {ai.data.detail && <p className="nd-ai-detail">{ai.data.detail}</p>}
+            <p className="nd-ai-core"><GlossText>{ai.data.core}</GlossText></p>
+            {ai.data.detail && <p className="nd-ai-detail"><GlossText>{ai.data.detail}</GlossText></p>}
             <div className="nd-ai-row">
               <div className="nd-ai-sent" style={{ '--sc': sentColor(ai.data.sentiment) }}>
                 <span className="nd-ai-sent-badge">{ai.data.sentiment}</span>
@@ -258,13 +293,13 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
                 {ai.data.catalysts?.length > 0 && (
                   <div className="nd-ai-cr-col nd-ai-cr-pos">
                     <div className="nd-ai-cr-head"><span className="nd-ai-cr-ico">↑</span>催化因素</div>
-                    <ul className="nd-ai-cr-list">{ai.data.catalysts.map((c, i) => <li key={i}>{c}</li>)}</ul>
+                    <ul className="nd-ai-cr-list">{ai.data.catalysts.map((c, i) => <li key={i}><GlossText>{c}</GlossText></li>)}</ul>
                   </div>
                 )}
                 {ai.data.risks?.length > 0 && (
                   <div className="nd-ai-cr-col nd-ai-cr-neg">
                     <div className="nd-ai-cr-head"><span className="nd-ai-cr-ico">↓</span>風險提示</div>
-                    <ul className="nd-ai-cr-list">{ai.data.risks.map((r, i) => <li key={i}>{r}</li>)}</ul>
+                    <ul className="nd-ai-cr-list">{ai.data.risks.map((r, i) => <li key={i}><GlossText>{r}</GlossText></li>)}</ul>
                   </div>
                 )}
               </div>
@@ -274,7 +309,7 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
                 <div className="nd-ai-pts-head">投資人關注要點</div>
                 <ul className="nd-ai-pts">
                   {ai.data.points.map((p, i) => (
-                    <li key={i}><span className="nd-ai-pt-num">{i + 1}</span><span>{p}</span></li>
+                    <li key={i}><span className="nd-ai-pt-num">{i + 1}</span><span><GlossText>{p}</GlossText></span></li>
                   ))}
                 </ul>
               </div>
@@ -292,6 +327,19 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
           </div>
         )}
       </div>
+
+      {(() => {
+        const ids = (NEWS_LEARN_MAP[news.tag] || []).filter(id => LEARN_CARDS.some(c => c.id === id)).slice(0, 3)
+        if (!ids.length) return null
+        return (
+          <div className="nd-learn">
+            <div className="nd-learn-title">📖 相關教學</div>
+            <div className="nd-learn-list">
+              {ids.map(id => <MiniLearnCard key={id} cardId={id}/>)}
+            </div>
+          </div>
+        )
+      })()}
 
       {news.url && (
         <div className="nd-foot">

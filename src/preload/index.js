@@ -22,7 +22,9 @@ const api = {
   searchSymbol: (query) => ipcRenderer.invoke('search-symbol', query),
   analyzeNews: (news) => ipcRenderer.invoke('analyze-news', news),
   getGroups: () => ipcRenderer.invoke('get-groups'),
-  saveGroups: (groups) => ipcRenderer.invoke('save-groups', groups)
+  saveGroups: (groups) => ipcRenderer.invoke('save-groups', groups),
+  fetchEconomicCalendar: () => ipcRenderer.invoke('fetch-economic-calendar'),
+  fetchNewsMulti: () => ipcRenderer.invoke('fetch-news-multi')
 }
 
 if (process.contextIsolated) {

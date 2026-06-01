@@ -77,6 +77,10 @@
   0%,100% { box-shadow: 0 0 0 4px rgba(16,185,129,0.18); }
   50%     { box-shadow: 0 0 0 6px rgba(16,185,129,0.05); }
 }
+.dot-off {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted); opacity: 0.5;
+}
 
 .tb-search {
   position: relative;

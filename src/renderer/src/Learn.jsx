@@ -237,9 +237,142 @@ function CycleVis() {
   )
 }
 
+function ETFVis() {
+  const stocks = [
+    { label:'台積電', pct:28, col:'#3b82f6' },
+    { label:'聯發科', pct:14, col:'#8b5cf6' },
+    { label:'鴻海',   pct:10, col:'#06b6d4' },
+    { label:'富邦金', pct:7,  col:'#10b981' },
+    { label:'其他',   pct:41, col:'#475569' },
+  ]
+  const W = 296, H = 168, cx = 90, cy = 82, r = 62, ri = 32
+  let angle = -Math.PI / 2
+  const slices = stocks.map(s => {
+    const a = (s.pct / 100) * 2 * Math.PI
+    const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle)
+    angle += a
+    const x2 = cx + r * Math.cos(angle), y2 = cy + r * Math.sin(angle)
+    const xi1 = cx + ri * Math.cos(angle - a), yi1 = cy + ri * Math.sin(angle - a)
+    const xi2 = cx + ri * Math.cos(angle), yi2 = cy + ri * Math.sin(angle)
+    const lg = a > Math.PI ? 1 : 0
+    return { ...s, d: `M${xi1} ${yi1} L${x1} ${y1} A${r} ${r} 0 ${lg} 1 ${x2} ${y2} L${xi2} ${yi2} A${ri} ${ri} 0 ${lg} 0 ${xi1} ${yi1} Z` }
+  })
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display:'block' }}>
+      {slices.map((s, i) => <path key={i} d={s.d} fill={s.col} opacity="0.85"/>)}
+      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="11" fill="#94a3b8">0050</text>
+      <text x={cx} y={cy + 8} textAnchor="middle" fontSize="11" fill="#94a3b8">ETF</text>
+      {stocks.map((s, i) => (
+        <g key={i} transform={`translate(170, ${18 + i * 28})`}>
+          <rect width="10" height="10" rx="2" fill={s.col} opacity="0.85"/>
+          <text x="14" y="9" fontSize="12" fill="#cbd5e1">{s.label}</text>
+          <text x="90" y="9" fontSize="12" fill="#94a3b8" textAnchor="end">{s.pct}%</text>
+        </g>
+      ))}
+    </svg>
+  )
+}
+
+function PBVis() {
+  const bars = [
+    { label:'台積電', pb:5.8, col:'#3b82f6' },
+    { label:'聯發科', pb:3.2, col:'#8b5cf6' },
+    { label:'玉山金', pb:1.1, col:'#10b981' },
+    { label:'台泥',   pb:0.8, col:'#f59e0b' },
+  ]
+  const W = 296, H = 148, maxPB = 7, barH = 22, gap = 10, left = 60
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display:'block' }}>
+      <line x1={left} y1={8} x2={left} y2={H - 24} stroke="#334155" strokeWidth="1"/>
+      <line x1={left} y1={H - 24} x2={W - 10} y2={H - 24} stroke="#334155" strokeWidth="1"/>
+      {[1, 2, 4, 6].map(v => {
+        const x = left + (v / maxPB) * (W - left - 10)
+        return <g key={v}>
+          <line x1={x} y1={8} x2={x} y2={H - 24} stroke="#1e293b" strokeWidth="1" strokeDasharray="4 3"/>
+          <text x={x} y={H - 10} textAnchor="middle" fontSize="10" fill="#475569">{v}x</text>
+        </g>
+      })}
+      {/* P/B = 1 reference line */}
+      {(() => { const x = left + (1 / maxPB) * (W - left - 10); return (
+        <line x1={x} y1={8} x2={x} y2={H - 24} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2"/>
+      )})()}
+      <text x={left + (1 / maxPB) * (W - left - 10) + 3} y={16} fontSize="9" fill="#f59e0b">P/B=1</text>
+      {bars.map((b, i) => {
+        const bw = (b.pb / maxPB) * (W - left - 10)
+        const y = 20 + i * (barH + gap)
+        return <g key={i}>
+          <text x={left - 4} y={y + barH / 2 + 4} textAnchor="end" fontSize="11" fill="#94a3b8">{b.label}</text>
+          <rect x={left} y={y} width={bw} height={barH} rx="3" fill={b.col} opacity="0.75"/>
+          <text x={left + bw + 5} y={y + barH / 2 + 4} fontSize="11" fill={b.col} fontWeight="600">{b.pb}x</text>
+        </g>
+      })}
+    </svg>
+  )
+}
+
+function ROEVis() {
+  const W = 296, H = 120
+  const boxes = [
+    { label:'淨利率', sub:'獲利能力', val:'15%', col:'#3b82f6', x: 14 },
+    { label:'資產周轉率', sub:'營運效率', val:'0.8x', col:'#8b5cf6', x: 110 },
+    { label:'財務槓桿', sub:'資金運用', val:'2.1x', col:'#06b6d4', x: 206 },
+  ]
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display:'block' }}>
+      {boxes.map((b, i) => (
+        <g key={i}>
+          <rect x={b.x} y={10} width={78} height={62} rx="8" fill={b.col} fillOpacity="0.12" stroke={b.col} strokeOpacity="0.3" strokeWidth="1"/>
+          <text x={b.x + 39} y={32} textAnchor="middle" fontSize="11" fill="#94a3b8">{b.label}</text>
+          <text x={b.x + 39} y={52} textAnchor="middle" fontSize="18" fontWeight="700" fill={b.col}>{b.val}</text>
+          <text x={b.x + 39} y={66} textAnchor="middle" fontSize="9" fill="#475569">{b.sub}</text>
+          {i < 2 && <text x={b.x + 84} y={44} textAnchor="middle" fontSize="16" fill="#475569">×</text>}
+        </g>
+      ))}
+      <line x1={14} y1={85} x2={282} y2={85} stroke="#1e293b" strokeWidth="1"/>
+      <rect x={90} y={92} width={116} height={24} rx="6" fill="#22c55e" fillOpacity="0.15" stroke="#22c55e" strokeOpacity="0.4" strokeWidth="1"/>
+      <text x={148} y={108} textAnchor="middle" fontSize="13" fontWeight="700" fill="#22c55e">ROE = 25.2%</text>
+    </svg>
+  )
+}
+
+function BondVis() {
+  const W = 296, H = 148
+  // Yield curve: normal vs inverted
+  const mats = ['3M','1Y','2Y','5Y','10Y','30Y']
+  const xs = mats.map((_, i) => 20 + i * (W - 40) / (mats.length - 1))
+  const normalY  = [5.2, 4.8, 4.6, 4.4, 4.3, 4.5]  // normal: slopes up
+  const invertedY= [5.4, 5.2, 5.0, 4.6, 4.2, 4.0]  // inverted: slopes down
+  const minY = 3.8, maxY = 5.6
+  const scaleY = v => 16 + (maxY - v) / (maxY - minY) * (H - 50)
+  const path = pts => pts.map((v, i) => `${i===0?'M':'L'}${xs[i].toFixed(1)},${scaleY(v).toFixed(1)}`).join(' ')
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display:'block' }}>
+      {/* grid */}
+      {[4.0,4.5,5.0,5.5].map(v => (
+        <g key={v}>
+          <line x1={20} y1={scaleY(v)} x2={W-10} y2={scaleY(v)} stroke="#1e293b" strokeWidth="1" strokeDasharray="4 3"/>
+          <text x={16} y={scaleY(v)+4} textAnchor="end" fontSize="9" fill="#475569">{v}%</text>
+        </g>
+      ))}
+      {/* normal yield curve */}
+      <path d={path(normalY)} fill="none" stroke="#22c55e" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* inverted yield curve */}
+      <path d={path(invertedY)} fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 3"/>
+      {/* x-axis labels */}
+      {mats.map((m, i) => <text key={m} x={xs[i]} y={H-10} textAnchor="middle" fontSize="10" fill="#64748b">{m}</text>)}
+      {/* legend */}
+      <line x1={20} y1={H-30} x2={38} y2={H-30} stroke="#22c55e" strokeWidth="2"/>
+      <text x={42} y={H-26} fontSize="10" fill="#22c55e">正常曲線</text>
+      <line x1={110} y1={H-30} x2={128} y2={H-30} stroke="#ef4444" strokeWidth="2" strokeDasharray="4 2"/>
+      <text x={132} y={H-26} fontSize="10" fill="#ef4444">倒掛（衰退警訊）</text>
+    </svg>
+  )
+}
+
 const VISUALS = {
   candle: CandleVis, ma: MAVis, rsi: RSIVis,
-  macd: MACDVis, vix: VIXVis, fg: FGVis, cycle: CycleVis,
+  macd: MACDVis, vix: VIXVis, fg: FGVis, cycle: CycleVis, etf: ETFVis,
+  pb: PBVis, roe: ROEVis, bond: BondVis,
 }
 
 // ── Card Data ─────────────────────────────────────────────────────────────
@@ -348,6 +481,83 @@ const CARDS = [
       {t:'key',v:'EPS = 稅後淨利 ÷ 流通在外股數'},
       {t:'p',v:'若台積電某季稅後淨利 2,000 億元，流通股數 259 億股，EPS = 7.7 元。代表每持有一股，這季替你「賺了」7.7 元。'},
       {t:'pts',v:['EPS 年年成長 → 企業獲利能力持續提升','EPS 超越分析師預期 → 股價常見上漲','EPS 低於預期 → 股價常見下跌（即使仍獲利）','台灣每季公布一次，每年 4 次','留意「業外一次性損益」導致的 EPS 失真']},
+    ]},
+  { id:'etf', title:'ETF 指數股票型基金', sub:'一次買進一籃子股票的聰明工具', cat:'basics', emoji:'🧺',
+    summary:'ETF 把一組股票打包成一支可在交易所買賣的商品，讓你用低成本分散持有整個市場或特定主題。',
+    body:[
+      {t:'vis',v:'etf'},
+      {t:'key',v:'ETF = 一籃子股票，在交易所像股票一樣買賣'},
+      {t:'p',v:'以台灣最知名的 0050（元大台灣 50）為例，買一張就等於同時持有台灣市值前 50 大企業的股份，台積電佔最大比重。股價漲跌反映整體成分股的表現。'},
+      {t:'pts',v:[
+        '分散風險：單一公司倒閉不會讓你血本無歸',
+        '低成本：管理費通常遠低於主動型基金',
+        '透明：成分股每日公開，不像黑箱基金',
+        '流動性高：市場開盤隨時可買賣',
+        '台灣熱門 ETF：0050、0056（高股息）、006208',
+        '美股熱門 ETF：SPY（追蹤 S&P500）、QQQ（Nasdaq 100）',
+      ]},
+      {t:'tip',v:'0050 vs 0056：0050 追蹤市值最大 50 家（成長導向），0056 篩選預測殖利率最高 30 家（配息導向）。長期來看 0050 總報酬率通常更高。'},
+    ]},
+  { id:'asset-alloc', title:'資產配置', sub:'不把雞蛋放在同一個籃子', cat:'basics', emoji:'⚖️',
+    summary:'將資金分散到不同資產類別（股票、債券、現金等），讓各類資產在市場下跌時互相補償，降低整體波動。',
+    body:[
+      {t:'key',v:'資產配置 = 決定「買什麼」比「何時買」更重要'},
+      {t:'p',v:'諾貝爾經濟學獎研究指出，投資組合報酬的 90% 以上由資產配置決定，而非選股或擇時。簡單說：分散才是最強的風控。'},
+      {t:'pts',v:[
+        '股票：高波動高報酬，適合長期',
+        '債券：低波動穩定收益，與股票常呈負相關',
+        '現金/定存：保本但輸通膨，作為緩衝',
+        '黃金：避險資產，危機時常逆向上漲',
+        '經典配置：股 60% / 債 40%（60/40 組合）',
+        '年輕人可提高股票比重；接近退休則增加債券',
+      ]},
+      {t:'tip',v:'再平衡（Rebalancing）：每年定期把偏移的比例調回目標，自動實現「高賣低買」。'},
+    ]},
+  { id:'pb-ratio', title:'P/B 市淨率', sub:'股價與帳面價值的比較', cat:'fundamental', emoji:'📚',
+    summary:'P/B = 股價 ÷ 每股淨資產，衡量你為一元的帳面資產付了多少錢，常用於評估金融股與傳產股。',
+    body:[
+      {t:'vis',v:'pb'},
+      {t:'key',v:'P/B = 股價 ÷ 每股淨資產（Book Value Per Share）'},
+      {t:'p',v:'淨資產 = 總資產 − 總負債。P/B = 1 代表你正好以帳面價值買入；P/B < 1 代表股價低於帳面，可能被低估；P/B > 3 常見於高獲利科技股。'},
+      {t:'pts',v:[
+        'P/B < 1：股價低於清算價值，可能有安全邊際',
+        '金融股、銀行股：P/B 1～2 屬合理',
+        '科技股：P/B 可達 10 以上（因無形資產不計入）',
+        '搭配 ROE 使用：高 ROE + 高 P/B 才有意義',
+        '台灣金融股 P/B 通常 1～1.5',
+      ]},
+      {t:'tip',v:'P/B 不適合輕資產企業（如軟體公司），因為品牌、技術等無形資產不列入帳面，導致 P/B 虛高。'},
+    ]},
+  { id:'roe', title:'ROE 股東權益報酬率', sub:'管理層替股東賺錢的效率', cat:'fundamental', emoji:'🏆',
+    summary:'ROE = 稅後淨利 ÷ 股東權益，衡量公司用股東的錢創造多少獲利，是巴菲特最看重的指標之一。',
+    body:[
+      {t:'vis',v:'roe'},
+      {t:'key',v:'ROE = 淨利率 × 資產周轉率 × 財務槓桿（杜邦分析）'},
+      {t:'p',v:'ROE 20% 代表每投入 100 元的股東資金，一年能賺回 20 元。巴菲特認為持續 ROE > 15% 的企業才算真正的好公司。杜邦分析可拆解 ROE 來源，避免被高槓桿美化的假象誤導。'},
+      {t:'pts',v:[
+        'ROE > 15%：優質企業的門檻',
+        'ROE > 20% 且連續 5 年：頂級護城河',
+        '靠槓桿（借錢）拉高 ROE 要小心',
+        '台積電 ROE 長期維持 25% 以上',
+        '同產業比較才有意義',
+      ]},
+      {t:'tip',v:'搭配 P/B 使用：ROE ÷ P/B = 股價的實質報酬率。若 ROE 20%、P/B 2，等效年報酬約 10%。'},
+    ]},
+  { id:'bond', title:'債券與殖利率', sub:'理解利率環境的關鍵語言', cat:'basics', emoji:'📜',
+    summary:'債券是借錢給政府或企業的憑證，殖利率反映報酬率。殖利率與債券價格反向連動，是理解宏觀市場的必修課。',
+    body:[
+      {t:'vis',v:'bond'},
+      {t:'key',v:'殖利率上升 → 債券價格下跌（反向關係）'},
+      {t:'p',v:'買入債券就是把錢借給發行人，到期拿回本金並領固定利息。如果市場利率升高，舊債券的固定利息就相對不吸引，價格自然下跌。這就是「升息循環中債券虧損」的根本原因。'},
+      {t:'pts',v:[
+        '美國 10 年期公債殖利率：全球利率的基準參考',
+        '殖利率曲線正常：長天期 > 短天期（有期限溢酬）',
+        '殖利率曲線倒掛：短 > 長，歷史上衰退機率大增',
+        '投資級債券（BBB 以上）：違約風險低，報酬穩定',
+        '高收益債（垃圾債）：利率高但違約風險大',
+        '通膨預期上升 → 實質殖利率下降 → 黃金受益',
+      ]},
+      {t:'tip',v:'升息尾聲、降息前夕是買入長天期公債的甜蜜點。降息 1% 時，20 年期公債價格約上漲 15-20%。'},
     ]},
 ]
 

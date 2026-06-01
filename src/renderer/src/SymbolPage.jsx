@@ -3,12 +3,19 @@ import { useConv, useData, symbolSeed, timeAgo, Sparkline, BigChart, RegionTag, 
 import { MiniLearnCard, CARDS as LEARN_CARDS } from './Learn'
 
 const LEARN_MAP = {
-  stock:   ['candlestick', 'ma', 'rsi', 'macd', 'kd', 'pe-ratio', 'eps'],
-  index:   ['indices', 'rsi', 'macd', 'vix', 'market-cycle'],
-  forex:   ['forex', 'candlestick', 'ma', 'rsi'],
-  commod:  ['candlestick', 'ma', 'rsi', 'macd'],
-  crypto:  ['candlestick', 'rsi', 'vix', 'fear-greed'],
-  bond:    ['indices', 'vix', 'market-cycle'],
+  stock:   ['candlestick', 'ma', 'rsi', 'macd', 'kd', 'pe-ratio', 'eps', 'pb-ratio', 'roe'],
+  index:   ['indices', 'rsi', 'macd', 'vix', 'market-cycle', 'asset-alloc'],
+  forex:   ['forex', 'candlestick', 'ma', 'rsi', 'asset-alloc'],
+  commod:  ['candlestick', 'ma', 'rsi', 'macd', 'asset-alloc'],
+  crypto:  ['candlestick', 'rsi', 'vix', 'fear-greed', 'asset-alloc'],
+  bond:    ['indices', 'vix', 'market-cycle', 'asset-alloc'],
+}
+export const NEWS_LEARN_MAP = {
+  '央行':  ['vix', 'fear-greed', 'market-cycle'],
+  '匯市':  ['forex', 'asset-alloc'],
+  '科技':  ['candlestick', 'pe-ratio', 'eps', 'pb-ratio', 'roe'],
+  '加密':  ['candlestick', 'rsi', 'vix', 'fear-greed'],
+  '財經':  ['pe-ratio', 'eps', 'pb-ratio', 'roe', 'dividend'],
 }
 function getRelatedCards(kind) {
   return (LEARN_MAP[kind] || LEARN_MAP.stock)

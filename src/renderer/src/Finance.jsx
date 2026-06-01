@@ -26,6 +26,29 @@ export function symbolSeed(sym) {
   for (let i = 0; i < sym.length; i++) h = (Math.imul(31, h) + sym.charCodeAt(i)) | 0
   return Math.abs(h) % 9000 + 100
 }
+export function getMarketStatus() {
+  const now = new Date()
+  const day = now.getUTCDay()           // 0=Sun, 6=Sat
+  const utcMin = now.getUTCHours() * 60 + now.getUTCMinutes()
+  const isWeekday = day >= 1 && day <= 5
+
+  // TWSE: Mon-Fri 09:00-13:30 UTC+8 → 01:00-05:30 UTC
+  const twseOpen = isWeekday && utcMin >= 60 && utcMin < 330
+
+  // NYSE: Mon-Fri 09:30-16:00 ET
+  // EDT (approx Mar-Nov): UTC-4 → 13:30-20:00 UTC
+  // EST (approx Dec-Feb): UTC-5 → 14:30-21:00 UTC
+  const mo = now.getUTCMonth() + 1
+  const isEDT = mo >= 3 && mo <= 11
+  const nyseStart = isEDT ? 810 : 870   // 13:30 or 14:30 in minutes
+  const nyseEnd   = isEDT ? 1200 : 1260 // 20:00 or 21:00 in minutes
+  const nyseOpen  = isWeekday && utcMin >= nyseStart && utcMin < nyseEnd
+
+  if (twseOpen && nyseOpen) return { open: true, label: 'NYSE · TWSE 開盤中' }
+  if (twseOpen)             return { open: true, label: 'TWSE 開盤中' }
+  if (nyseOpen)             return { open: true, label: 'NYSE 開盤中' }
+  return { open: false, label: '休市中' }
+}
 export function timeAgo(ts) {
   const d = Math.floor(Date.now() / 1000) - ts
   if (d < 60) return '剛剛'
@@ -182,17 +205,19 @@ export function SectionTitle({ kicker, label, count, action }) {
 
 // ── Chrome ────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { id:'feed',    label:'今日脈動',   icon:'pulse',  section:'pulse' },
-  { id:'indices', label:'全球股市',   icon:'chart',  section:'market', tab:'indices' },
-  { id:'forex',   label:'外匯匯率',   icon:'forex',  section:'market', tab:'forex' },
-  { id:'commod',  label:'大宗商品',   icon:'coin',   section:'market', tab:'commodities' },
-  { id:'treas',   label:'公債殖利率', icon:'bank',   section:'market', tab:'treasuries' },
-  { id:'crypto',  label:'加密貨幣',   icon:'crypto', section:'market', tab:'crypto' },
-  { id:'sep',     sep:true },
-  { id:'watch',   label:'自選清單',   icon:'star',   section:'watch' },
-  { id:'sep2',    sep:true },
-  { id:'news',    label:'新聞動態',   icon:'news',   section:'news' },
-  { id:'learn',   label:'投資百科',   icon:'book',   section:'learn' },
+  { id:'feed',      label:'今日脈動',   icon:'pulse',     section:'pulse' },
+  { id:'indices',   label:'全球股市',   icon:'chart',     section:'market', tab:'indices' },
+  { id:'forex',     label:'外匯匯率',   icon:'forex',     section:'market', tab:'forex' },
+  { id:'commod',    label:'大宗商品',   icon:'coin',      section:'market', tab:'commodities' },
+  { id:'treas',     label:'公債殖利率', icon:'bank',      section:'market', tab:'treasuries' },
+  { id:'crypto',    label:'加密貨幣',   icon:'crypto',    section:'market', tab:'crypto' },
+  { id:'sep',       sep:true },
+  { id:'watch',     label:'自選清單',   icon:'star',      section:'watch' },
+  { id:'sep2',      sep:true },
+  { id:'sentiment', label:'市場情緒',   icon:'gauge',     section:'sentiment' },
+  { id:'calendar',  label:'財經日曆',   icon:'cal',       section:'calendar' },
+  { id:'news',      label:'新聞動態',   icon:'news',      section:'news' },
+  { id:'learn',     label:'投資百科',   icon:'book',      section:'learn' },
 ]
 
 function NavIcon({ name, watch = false }) {
@@ -271,11 +296,16 @@ export function WatchRail({ items, onAdd, onSelect, onRemove, collapsed, onToggl
 export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLeft, onPortfolio, density, onCycleDensity }) {
   const [q, setQ] = useState('')
   const [time, setTime] = useState(() => new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }))
+  const [mktStatus, setMktStatus] = useState(() => getMarketStatus())
   const conv = useConv()
   const data = useData()
   const portfolio = data?.portfolio
   useEffect(() => {
     const id = setInterval(() => setTime(new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false })), 1000)
+    return () => clearInterval(id)
+  }, [])
+  useEffect(() => {
+    const id = setInterval(() => setMktStatus(getMarketStatus()), 60_000)
     return () => clearInterval(id)
   }, [])
   return (
@@ -285,7 +315,11 @@ export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLe
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
         </button>
         <div className="tb-clock"><span className="tb-time">{time}</span><span className="tb-tz">GMT+8</span></div>
-        <span className="tb-divider"/><span className="tb-status"><i className="dot-live"/>市場開盤中 · NYSE / TWSE</span>
+        <span className="tb-divider"/>
+        <span className="tb-status">
+          <i className={mktStatus.open ? 'dot-live' : 'dot-off'}/>
+          {mktStatus.label}
+        </span>
       </div>
       <div className="tb-c">
         <div className="tb-search">
@@ -467,7 +501,7 @@ export function MarketMatrix({ onSelect, defaultTab = 'indices' }) {
 }
 
 // ── Feed Panels ───────────────────────────────────────────────
-export function NewsFeed({ onOpen }) {
+export function NewsFeed({ onOpen, onRefresh, refreshing, limit }) {
   const data = useData()
   const [tab, setTab] = useState('all')
   const ALL_TABS = [{ id:'all', label:'全部' }, { id:'頭條', label:'頭條' }, { id:'央行', label:'央行' }, { id:'匯市', label:'匯市' }, { id:'科技', label:'科技' }, { id:'加密', label:'加密' }]
@@ -476,14 +510,22 @@ export function NewsFeed({ onOpen }) {
     : id === '頭條' ? news.some(n => n.tier === 'hero' || n.tier === 'major')
     : news.some(n => n.tag === id)
   const tabs = ALL_TABS.filter(t => hasContent(t.id))
-  const filtered = tab === 'all' ? news
+  const allFiltered = tab === 'all' ? news
     : tab === '頭條' ? news.filter(n => n.tier === 'hero' || n.tier === 'major')
     : news.filter(n => n.tag === tab)
+  const filtered = limit ? allFiltered.slice(0, limit) : allFiltered
   return (
     <section className="newsfeed panel">
       <div className="nf-head">
         <SectionTitle kicker="LIVE" label="今日新聞動態" count={filtered.length}
-          action={<div className="nf-tabs">{tabs.map(t => <button key={t.id} className={`nf-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>)}</div>}/>
+          action={<div className="nf-tabs">
+            {tabs.map(t => <button key={t.id} className={`nf-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>)}
+            {onRefresh && <button className="nf-refresh" onClick={onRefresh} disabled={refreshing} title="重新整理">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+              </svg>
+            </button>}
+          </div>}/>
       </div>
       <div className="nf-body">
         {filtered.map((n, i) => (
@@ -512,6 +554,58 @@ export function NewsFeed({ onOpen }) {
         ))}
       </div>
     </section>
+  )
+}
+
+// ── QuickMarket (主頁精簡行情條) ──────────────────────────────
+const QUICK_SYMS = ['SPX','TWII','USD/TWD','BTC','GOLD']
+export function QuickMarket({ onSelect }) {
+  const data = useData()
+  const conv = useConv()
+  const rows = useMemo(() => {
+    const all = [...(data.indices||[]), ...(data.forex||[]), ...(data.commodities||[])]
+    return QUICK_SYMS.map(s => all.find(r => r.sym === s)).filter(Boolean)
+  }, [data.indices, data.forex, data.commodities])
+  if (!rows.length) return null
+  return (
+    <div className="qm-strip">
+      {rows.map(r => (
+        <button key={r.sym} className="qm-cell" onClick={() => onSelect?.(r)}>
+          <span className="qm-sym">{r.sym}</span>
+          <span className="qm-val">{r.val}</span>
+          <span className="qm-chg" style={{ color: r.chg > 0 ? conv.upColor : r.chg < 0 ? conv.downColor : 'var(--text-muted)' }}>
+            {r.chg > 0 ? '▲' : r.chg < 0 ? '▼' : '·'} {Math.abs(r.chg).toFixed(2)}%
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── SentimentPage / CalendarPage (子頁包裝) ──────────────────
+export function SentimentPage() {
+  return (
+    <div className="subpage">
+      <div className="subpage-head">
+        <div className="subpage-kicker">SENTIMENT</div>
+        <div className="subpage-title">市場情緒</div>
+        <div className="subpage-sub">即時恐慌貪婪指數、波動率與漲跌統計</div>
+      </div>
+      <SentimentBar/>
+    </div>
+  )
+}
+
+export function CalendarPage() {
+  return (
+    <div className="subpage">
+      <div className="subpage-head">
+        <div className="subpage-kicker">CALENDAR</div>
+        <div className="subpage-title">財經日曆</div>
+        <div className="subpage-sub">重要經濟數據發布時間與預期值</div>
+      </div>
+      <Calendar/>
+    </div>
   )
 }
 
@@ -551,7 +645,9 @@ export function SentimentBar() {
   const conv = useConv()
   const s = data.sentiment
   if (!s) return null
-  const fgAngle = s.fearGreed.val / 100 * 270 - 135
+  const fgVal = s.fearGreed.val
+  const fgAngle = fgVal / 100 * 270 - 135
+  const fgColor = fgVal > 75 ? '#22c55e' : fgVal > 55 ? '#86efac' : fgVal > 45 ? '#facc15' : fgVal > 25 ? '#f97316' : '#ef4444'
   return (
     <section className="senti panel">
       <SectionTitle kicker="SENTIMENT" label="市場情緒"/>
@@ -559,17 +655,19 @@ export function SentimentBar() {
         <div className="s-card s-card-fg">
           <div className="s-label"><GTerm>恐慌貪婪指數</GTerm></div>
           <div className="fg-gauge">
-            <svg viewBox="-60 -55 120 95" width="120" height="95">
-              <path d="M -42 -20 A 47 47 0 1 1 42 -20" stroke="var(--border)" strokeWidth="6" fill="none" strokeLinecap="round"/>
+            <svg viewBox="-50 -48 100 86" width="100" height="86">
+              <path d="M -29.7 29.7 A 42 42 0 1 1 29.7 29.7" stroke="var(--border)" strokeWidth="6" fill="none" strokeLinecap="butt"/>
+              <path d="M -29.7 29.7 A 42 42 0 1 1 29.7 29.7" stroke={fgColor} strokeWidth="6" fill="none" strokeLinecap="butt"
+                pathLength="100" strokeDasharray={`${fgVal} 100`}/>
               <line x1="0" y1="0" x2={42 * Math.cos((fgAngle - 90) * Math.PI / 180)} y2={42 * Math.sin((fgAngle - 90) * Math.PI / 180)} stroke="var(--text)" strokeWidth="2.5" strokeLinecap="round"/>
               <circle cx="0" cy="0" r="4" fill="var(--text)"/>
             </svg>
-            <div className="fg-val"><span className="fg-num">{s.fearGreed.val}</span><span className="fg-tx">{s.fearGreed.text}</span></div>
+            <div className="fg-val"><span className="fg-num">{fgVal}</span><span className="fg-tx">{s.fearGreed.text}</span></div>
           </div>
         </div>
         <div className="s-card">
           <div className="s-label"><GTerm>波動率指數</GTerm> · VIX</div>
-          <div className="s-val">{s.vix.val}<span className="s-chg" style={{ color:conv.downColor }}>{s.vix.chg > 0 ? '+' : '−'}{Math.abs(s.vix.chg).toFixed(2)}</span></div>
+          <div className="s-val">{s.vix.val}<span className="s-chg" style={{ color: s.vix.chg > 0 ? conv.downColor : conv.upColor }}>{s.vix.chg > 0 ? '+' : '−'}{Math.abs(s.vix.chg).toFixed(2)}</span></div>
           <div className="s-sub">市場處於 <em>{s.vix.state}</em> 波動區間</div>
         </div>
         {s.advDec && (() => {
@@ -648,11 +746,18 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove, groups = [], o
   const [sort, setSort] = useState({ col: 'default', dir: 1 })
   const setActiveGroup = onActiveGroupChange ?? (() => {})
 
-  const symGroupMap = {}
-  groups.forEach(g => g.symbols.forEach(s => { if (!symGroupMap[s.symbol]) symGroupMap[s.symbol] = g }))
+  const symGroupMap = useMemo(() => {
+    const m = {}
+    groups.forEach(g => g.symbols.forEach(s => { if (!m[s.symbol]) m[s.symbol] = g }))
+    return m
+  }, [groups])
 
-  const visibleItems = activeGroup
-    ? items.filter(it => activeGroup.symbols.some(s => s.symbol === it.rawSym))
+  const activeGroupSet = useMemo(() =>
+    activeGroup ? new Set(activeGroup.symbols.map(s => s.symbol)) : null
+  , [activeGroup])
+
+  const visibleItems = activeGroupSet
+    ? items.filter(it => activeGroupSet.has(it.rawSym))
     : items
 
   const upCount   = visibleItems.filter(i => i.chg > 0).length
@@ -716,7 +821,7 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove, groups = [], o
               className={`wlp-gtab ${activeGroup?.id === g.id ? 'on' : ''}`}
               onClick={() => setActiveGroup(activeGroup?.id === g.id ? null : g)}>
               <span className="wlp-gtab-dot" style={{ background: g.color }}/>
-              {g.name}
+              <span className="wlp-gtab-name">{g.name}</span>
               <span className="wlp-gtab-ct">
                 {items.filter(it => g.symbols.some(s => s.symbol === it.rawSym)).length}
               </span>
