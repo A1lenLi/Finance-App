@@ -300,6 +300,7 @@ export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLe
   const conv = useConv()
   const data = useData()
   const portfolio = data?.portfolio
+  const inputRef = useRef(null)
   useEffect(() => {
     const id = setInterval(() => setTime(new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false })), 1000)
     return () => clearInterval(id)
@@ -307,6 +308,17 @@ export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLe
   useEffect(() => {
     const id = setInterval(() => setMktStatus(getMarketStatus()), 60_000)
     return () => clearInterval(id)
+  }, [])
+  useEffect(() => {
+    const handler = e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
   }, [])
   return (
     <header className="topbar">
@@ -324,7 +336,10 @@ export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLe
       <div className="tb-c">
         <div className="tb-search">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="搜尋代碼、新聞、名詞…" onKeyDown={e => { if (e.key === 'Enter') { onSearch(q); setQ('') } }}/>
+          <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder="搜尋代碼、新聞、名詞…" onKeyDown={e => {
+            if (e.key === 'Enter' && q.trim()) { onSearch(q.trim()); setQ('') }
+            if (e.key === 'Escape') { setQ(''); inputRef.current?.blur() }
+          }}/>
           <span className="kbd">⌘K</span>
         </div>
       </div>
