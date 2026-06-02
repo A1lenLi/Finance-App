@@ -212,11 +212,34 @@ function AiStockChip({ label, onOpenSymbol }) {
   )
 }
 
+const AI_CACHE_TTL = 48 * 60 * 60 * 1000 // 48 hours
+
+function aiCacheKey(news) {
+  const raw = news.url || news.title || ''
+  let h = 0
+  for (let i = 0; i < raw.length; i++) h = Math.imul(31, h) + raw.charCodeAt(i) | 0
+  return `wf-ai-${(h >>> 0).toString(36)}`
+}
+function loadAiCache(key) {
+  try {
+    const s = localStorage.getItem(key)
+    if (!s) return null
+    const { ts, data } = JSON.parse(s)
+    if (Date.now() - ts > AI_CACHE_TTL) { localStorage.removeItem(key); return null }
+    return { ...data, cached: true }
+  } catch { return null }
+}
+function saveAiCache(key, result) {
+  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data: result })) } catch {}
+}
+
 export function NewsDetail({ news, onClose, onOpenSymbol }) {
   const conv = useConv()
-  const [ai, setAi] = useState(null)
+  const cacheKey = useMemo(() => aiCacheKey(news), [news.url, news.title])
+  const [ai, setAi] = useState(() => loadAiCache(cacheKey))
 
-  const analyse = async () => {
+  const analyse = async (bypassCache = false) => {
+    if (bypassCache) localStorage.removeItem(cacheKey)
     setAi('loading')
     try {
       const timer = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))
@@ -224,6 +247,7 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
         window.api.analyzeNews({ title: news.title, summary: news.summary, url: news.url }),
         timer
       ])
+      if (result?.ok) saveAiCache(cacheKey, result)
       setAi(result)
     } catch (e) {
       setAi({ error: 'api', message: e.message === 'timeout' ? '分析逾時，請稍後再試' : e.message })
@@ -273,7 +297,8 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
             <div className="nd-ai-card-head">
               <span className="nd-ai-label">✦ AI 解析</span>
               <span className="nd-ai-model">{ai.provider === 'groq' ? 'Groq · qwen3-32b' : 'Claude Haiku'} · {ai.source || '摘要'}</span>
-              <button className="nd-ai-redo" title="重新分析" onClick={() => setAi(null)}>↺</button>
+              {ai.cached && <span className="nd-ai-cached">已快取</span>}
+              <button className="nd-ai-redo" title="重新分析" onClick={() => analyse(true)}>↺</button>
             </div>
             <p className="nd-ai-core"><GlossText>{ai.data.core}</GlossText></p>
             {ai.data.detail && <p className="nd-ai-detail"><GlossText>{ai.data.detail}</GlossText></p>}
