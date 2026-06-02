@@ -24,7 +24,8 @@ const api = {
   getGroups: () => ipcRenderer.invoke('get-groups'),
   saveGroups: (groups) => ipcRenderer.invoke('save-groups', groups),
   fetchEconomicCalendar: () => ipcRenderer.invoke('fetch-economic-calendar'),
-  fetchNewsMulti: () => ipcRenderer.invoke('fetch-news-multi')
+  fetchNewsMulti: () => ipcRenderer.invoke('fetch-news-multi'),
+  fetchMarketAdvDec: () => ipcRenderer.invoke('fetch-market-adv-dec')
 }
 
 if (process.contextIsolated) {

@@ -390,6 +390,7 @@ export default function App() {
   const [alertItem, setAlertItem] = useState(null)
   const [firedAlerts, setFiredAlerts] = useState([])
   const [externalSentiment, setExternalSentiment] = useState(null)
+  const [twseAdvDec, setTwseAdvDec] = useState(null)
   const [groupManagerOpen, setGroupManagerOpen] = useState(false)
   const [holdings, saveHoldings] = usePortfolio()
   const [alerts, saveAlerts] = useAlerts()
@@ -438,6 +439,7 @@ export default function App() {
     loadNews()
     window.api.fetchSentiment().then(s => { if (s) setExternalSentiment(s) }).catch(() => {})
     window.api.fetchEconomicCalendar().then(data => { if (data?.length) setCalendarData(data) }).catch(() => {})
+    window.api.fetchMarketAdvDec().then(d => { if (d) setTwseAdvDec(d) }).catch(() => {})
   }, [loadMarketData])
 
   useEffect(() => {
@@ -494,17 +496,11 @@ export default function App() {
       const fgText = fgVal > 75 ? '極度貪婪' : fgVal > 55 ? '貪婪' : fgVal > 45 ? '中性' : fgVal > 25 ? '恐慌' : '極度恐慌'
       fearGreed = { val: fgVal, state: fgVal > 55 ? 'greed' : fgVal > 45 ? 'neutral' : 'fear', text: fgText }
     }
-    const allItems = [
-      ...(marketData?.indices || []), ...(marketData?.forex || []),
-      ...(marketData?.commodities || []), ...(marketData?.bonds || []),
-      ...(marketData?.crypto || []),
-    ].filter(r => r && !r.error && r.changePercent != null)
-    const adv = allItems.filter(r => r.changePercent > 0).length
-    const dec = allItems.filter(r => r.changePercent < 0).length
-    const unch = allItems.filter(r => r.changePercent === 0).length
-    const advDec = allItems.length > 0 ? { adv, dec, unch } : null
+    const advDec = twseAdvDec
+      ? { adv: twseAdvDec.adv, dec: twseAdvDec.dec, unch: twseAdvDec.unch, total: twseAdvDec.total, source: 'twse' }
+      : null
     return { vix: { val: vixVal, chg: vixChg, state: vixState }, fearGreed, advDec }
-  }, [marketData, externalSentiment])
+  }, [marketData, externalSentiment, twseAdvDec])
 
   const portfolio = useMemo(() => {
     if (!holdings.length) return null
@@ -653,7 +649,7 @@ export default function App() {
                   <PulseStrip onSelect={setSymbolPage}/>
                   <QuickMarket onSelect={setSymbolPage}/>
                   <PortfolioBand onManage={() => setPortfolioOpen(true)}/>
-                  <div id="section-news"><NewsFeed onOpen={setNewsModal} onRefresh={loadNews} refreshing={newsLoading} limit={5}/></div>
+                  <div id="section-news"><NewsFeed onOpen={setNewsModal} onRefresh={loadNews} refreshing={newsLoading}/></div>
                   <footer style={{ padding:'20px 4px', fontSize:11, color:'var(--text-muted)', textAlign:'center', borderTop:'1px solid var(--border)', marginTop:8 }}>
                     資料來源：Yahoo Finance｜點擊任意項目查看詳情｜<strong style={{ color:'var(--text)' }}>僅供參考，不構成投資建議</strong>
                   </footer>

@@ -888,6 +888,35 @@ app.whenReady().then(() => {
     } catch { return [] }
   })
 
+
+  // ── TWSE advance/decline ─────────────────────────────────────────────
+  let advDecCache = null
+  let advDecCacheAt = 0
+  ipcMain.handle('fetch-market-adv-dec', async () => {
+    if (advDecCache && Date.now() - advDecCacheAt < 5 * 60 * 1000) return advDecCache
+    try {
+      const raw = await httpsGetText('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL', {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+      })
+      const arr = JSON.parse(raw)
+      if (!Array.isArray(arr) || arr.length === 0) return null
+      let adv = 0, dec = 0, unch = 0
+      for (const r of arr) {
+        const c = parseFloat(r.Change)
+        if (isNaN(c)) continue
+        if (c > 0) adv++; else if (c < 0) dec++; else unch++
+      }
+      const result = { adv, dec, unch, total: arr.length, source: 'twse', date: arr[0]?.Date || '' }
+      advDecCache = result
+      advDecCacheAt = Date.now()
+      return result
+    } catch (e) {
+      console.error('fetch-market-adv-dec error:', e.message)
+      return null
+    }
+  })
+
   ipcMain.handle('fetch-news-multi', async () => {
     const MIN_SUMMARY = 60
     const results = await Promise.allSettled([

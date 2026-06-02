@@ -686,11 +686,15 @@ export function SentimentBar() {
           <div className="s-sub">市場處於 <em>{s.vix.state}</em> 波動區間</div>
         </div>
         {s.advDec && (() => {
-          const total = s.advDec.adv + s.advDec.dec + s.advDec.unch
+          const total = s.advDec.total ?? (s.advDec.adv + s.advDec.dec + s.advDec.unch)
           const advPct = s.advDec.adv / total * 100, decPct = s.advDec.dec / total * 100
+          const isTwse = s.advDec.source === 'twse'
           return (
             <div className="s-card s-card-wide">
-              <div className="s-label"><GTerm>漲跌家數</GTerm></div>
+              <div className="s-label">
+                <GTerm>漲跌家數</GTerm>
+                {isTwse && <span style={{ fontSize:11, color:'var(--accent)', marginLeft:5, fontWeight:600 }}>台股</span>}
+              </div>
               <div className="ad-row">
                 <span style={{ color:conv.upColor, fontFamily:'var(--font-mono)', fontWeight:700 }}>▲ {s.advDec.adv}</span>
                 <span style={{ color:'var(--text-muted)', fontFamily:'var(--font-mono)' }}>· {s.advDec.unch}</span>
@@ -701,7 +705,7 @@ export function SentimentBar() {
                 <span style={{ width:`${100-advPct-decPct}%`, background:'var(--text-muted)' }}/>
                 <span style={{ width:`${decPct}%`, background:conv.downColor }}/>
               </div>
-              <div className="s-sub">新高 <em style={{ color:conv.upColor }}>{s.highsLows?.newHigh ?? '--'}</em> · 新低 <em style={{ color:conv.downColor }}>{s.highsLows?.newLow ?? '--'}</em></div>
+              <div className="s-sub">{isTwse ? `共 ${total} 支上市股票` : '新高 -- · 新低 --'}</div>
             </div>
           )
         })()}
