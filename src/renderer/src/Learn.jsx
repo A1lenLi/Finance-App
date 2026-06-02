@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 // ── localStorage hook ─────────────────────────────────────────────────────
 function useReadSet() {
@@ -672,6 +672,253 @@ export function MiniLearnCard({ cardId }) {
   )
 }
 
+// ── Tools ─────────────────────────────────────────────────────────────────
+function CompoundCalc() {
+  const [principal, setPrincipal] = useState(100000)
+  const [monthly, setMonthly]     = useState(5000)
+  const [rate, setRate]           = useState(8)
+  const [years, setYears]         = useState(20)
+
+  const data = useMemo(() => {
+    const r = rate / 100 / 12
+    const pts = []
+    for (let y = 0; y <= years; y++) {
+      const n = y * 12
+      const futureP = principal * Math.pow(1 + r, n)
+      const futureM = r > 0 ? monthly * (Math.pow(1 + r, n) - 1) / r : monthly * n
+      pts.push({ y, total: Math.round(futureP + futureM), invested: Math.round(principal + monthly * n) })
+    }
+    return pts
+  }, [principal, monthly, rate, years])
+
+  const last    = data[data.length - 1]
+  const profit  = last.total - last.invested
+  const maxVal  = last.total
+  const W = 400, H = 120, pad = { l:8, r:8, t:8, b:20 }
+  const xS = i => pad.l + (i / years) * (W - pad.l - pad.r)
+  const yS = v => pad.t + (1 - v / maxVal) * (H - pad.t - pad.b)
+  const totalPath    = data.map((d,i) => `${i===0?'M':'L'}${xS(d.y).toFixed(1)},${yS(d.total).toFixed(1)}`).join(' ')
+  const investedPath = data.map((d,i) => `${i===0?'M':'L'}${xS(d.y).toFixed(1)},${yS(d.invested).toFixed(1)}`).join(' ')
+  const areaPath     = totalPath + ` L${xS(years).toFixed(1)},${yS(0).toFixed(1)} L${xS(0).toFixed(1)},${yS(0).toFixed(1)} Z`
+
+  const fmt = n => n >= 1e8 ? `${(n/1e8).toFixed(1)}億` : n >= 1e4 ? `${(n/1e4).toFixed(0)}萬` : n.toLocaleString()
+
+  return (
+    <div className="tool-card">
+      <div className="tool-title">💰 複利計算機</div>
+      <div className="tool-sub">時間是投資人最好的朋友，看看複利的威力</div>
+      <div className="tool-inputs">
+        {[
+          { label:'初始本金', val:principal, set:setPrincipal, min:0, max:10000000, step:10000, unit:'元' },
+          { label:'每月定投', val:monthly,   set:setMonthly,   min:0, max:100000,   step:1000,  unit:'元' },
+          { label:'年報酬率', val:rate,       set:setRate,      min:1, max:30,       step:0.5,   unit:'%' },
+          { label:'投資年數', val:years,      set:setYears,     min:1, max:50,       step:1,     unit:'年' },
+        ].map(f => (
+          <div key={f.label} className="tool-field">
+            <div className="tool-field-row">
+              <label className="tool-label">{f.label}</label>
+              <span className="tool-field-val">{f.val.toLocaleString()}{f.unit}</span>
+            </div>
+            <input type="range" min={f.min} max={f.max} step={f.step} value={f.val}
+              onChange={e => f.set(+e.target.value)} className="tool-range"/>
+          </div>
+        ))}
+      </div>
+      <div className="tool-results">
+        <div className="tool-result-item">
+          <span className="tool-result-lbl">最終金額</span>
+          <span className="tool-result-val" style={{ color:'var(--green)' }}>{fmt(last.total)}</span>
+        </div>
+        <div className="tool-result-item">
+          <span className="tool-result-lbl">總投入</span>
+          <span className="tool-result-val">{fmt(last.invested)}</span>
+        </div>
+        <div className="tool-result-item">
+          <span className="tool-result-lbl">投資獲利</span>
+          <span className="tool-result-val" style={{ color:'var(--accent)' }}>{fmt(profit)}</span>
+        </div>
+        <div className="tool-result-item">
+          <span className="tool-result-lbl">報酬倍數</span>
+          <span className="tool-result-val">{(last.total / last.invested).toFixed(1)}x</span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display:'block', margin:'12px 0 4px' }}>
+        <defs>
+          <linearGradient id="cgGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--green)" stopOpacity="0.25"/>
+            <stop offset="100%" stopColor="var(--green)" stopOpacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#cgGrad)"/>
+        <path d={investedPath} stroke="var(--text-muted)" strokeWidth="1.5" fill="none" strokeDasharray="5 3"/>
+        <path d={totalPath} stroke="var(--green)" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+        {[0, Math.floor(years/2), years].map(y => (
+          <text key={y} x={xS(y)} y={H} textAnchor="middle" fontSize="10" fill="#475569">{y}年</text>
+        ))}
+      </svg>
+      <div style={{ display:'flex', gap:16, fontSize:11, color:'var(--text-muted)' }}>
+        <span><span style={{ color:'var(--green)' }}>——</span> 資產總值</span>
+        <span><span style={{ color:'var(--text-muted)' }}>- - -</span> 累計投入</span>
+      </div>
+    </div>
+  )
+}
+
+// ── Risk Quiz ─────────────────────────────────────────────────────────────
+const RQ_QUESTIONS = [
+  { q:'你預計這筆投資要放多久？',
+    opts:['1 年以內','1–3 年','3–7 年','7 年以上'], scores:[1,2,3,4] },
+  { q:'如果投資組合一個月內下跌 20%，你會？',
+    opts:['馬上全賣，不能接受虧損','賣掉一半觀望','繼續持有等回升','加碼買進逢低布局'], scores:[1,2,3,4] },
+  { q:'你的主要收入來源有多穩定？',
+    opts:['不穩定（自由業/創業）','尚可（合約/兼職）','穩定（正職）','非常穩定（公職/多元收入）'], scores:[1,2,3,4] },
+  { q:'你的投資經驗？',
+    opts:['完全沒有','了解基礎，買過基金','有股票經驗 1–3 年','3 年以上，熟悉多種工具'], scores:[1,2,3,4] },
+  { q:'你的主要投資目標是？',
+    opts:['保本，不要虧損','穩定收益小幅成長','長期資本增值','積極成長，能承擔大波動'], scores:[1,2,3,4] },
+]
+const RQ_PROFILES = [
+  { type:'保守型', range:[5,10], color:'#22c55e',
+    desc:'你重視資金安全，不能承受太大波動。以固定收益為主的穩健配置最適合你。',
+    alloc:[{label:'現金/定存',pct:30,col:'#64748b'},{label:'債券',pct:45,col:'#22c55e'},{label:'股票',pct:20,col:'#3b82f6'},{label:'黃金',pct:5,col:'#f59e0b'}] },
+  { type:'穩健型', range:[11,16], color:'#3b82f6',
+    desc:'你願意承受一定波動以換取中長期成長，均衡配置讓你安心持有又能成長。',
+    alloc:[{label:'現金/定存',pct:10,col:'#64748b'},{label:'債券',pct:30,col:'#22c55e'},{label:'股票',pct:50,col:'#3b82f6'},{label:'黃金',pct:10,col:'#f59e0b'}] },
+  { type:'積極型', range:[17,20], color:'#a855f7',
+    desc:'你追求長期高報酬，能接受短期大幅波動，以股票為主的進攻配置最適合你。',
+    alloc:[{label:'現金/定存',pct:5,col:'#64748b'},{label:'債券',pct:10,col:'#22c55e'},{label:'股票',pct:75,col:'#3b82f6'},{label:'黃金',pct:10,col:'#f59e0b'}] },
+]
+
+function RiskQuiz() {
+  const [answers, setAnswers] = useState({})
+  const [submitted, setSubmitted] = useState(false)
+
+  const answered = Object.keys(answers).length
+  const score = Object.entries(answers).reduce((s,[qi,oi]) => s + RQ_QUESTIONS[+qi].scores[oi], 0)
+  const profile = submitted
+    ? (RQ_PROFILES.find(p => score >= p.range[0] && score <= p.range[1]) || RQ_PROFILES[1])
+    : null
+
+  const pick = (qi, oi) => { if (!submitted) setAnswers(prev => ({ ...prev, [qi]: oi })) }
+  const reset = () => { setAnswers({}); setSubmitted(false) }
+
+  return (
+    <div className="tool-card">
+      <div className="tool-title">🎯 風險承受度測驗</div>
+      <div className="tool-sub">5 道題，找出最適合你的投資風格與建議配置</div>
+
+      {!submitted ? (
+        <>
+          <div className="rq-questions">
+            {RQ_QUESTIONS.map((q, qi) => (
+              <div key={qi} className="rq-q">
+                <div className="rq-qhead">
+                  <span className="rq-qnum">Q{qi + 1}</span>
+                  <span className="rq-qtext">{q.q}</span>
+                </div>
+                <div className="rq-opts">
+                  {q.opts.map((opt, oi) => (
+                    <button key={oi}
+                      className={`rq-opt${answers[qi] === oi ? ' rq-opt--on' : ''}`}
+                      onClick={() => pick(qi, oi)}>
+                      <span className="rq-opt-dot"/>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="rq-footer">
+            <span className="rq-progress">{answered} / {RQ_QUESTIONS.length} 已作答</span>
+            <button className="rq-submit" disabled={answered < RQ_QUESTIONS.length}
+              onClick={() => setSubmitted(true)}>查看結果 →</button>
+          </div>
+        </>
+      ) : (
+        <div className="rq-result">
+          <div className="rq-result-badge"
+            style={{ color: profile.color, borderColor: profile.color, background: `${profile.color}1a` }}>
+            {profile.type}
+          </div>
+          <p className="rq-result-desc">{profile.desc}</p>
+          <div className="rq-alloc-title">建議資產配置</div>
+          <div className="rq-alloc-bar">
+            {profile.alloc.map((a,i) => (
+              <div key={i} className="rq-alloc-seg" title={`${a.label} ${a.pct}%`}
+                style={{ width:`${a.pct}%`, background: a.col }}/>
+            ))}
+          </div>
+          <div className="rq-alloc-legend">
+            {profile.alloc.map((a,i) => (
+              <div key={i} className="rq-alloc-item">
+                <span className="rq-alloc-dot" style={{ background: a.col }}/>
+                <span className="rq-alloc-lbl">{a.label}</span>
+                <span className="rq-alloc-pct" style={{ color: a.col }}>{a.pct}%</span>
+              </div>
+            ))}
+          </div>
+          <div className="rq-score-row">
+            <span className="rq-score-txt">得分 {score} / 20</span>
+            <button className="rq-retry" onClick={reset}>重新測驗</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Valuation Calc ─────────────────────────────────────────────────────────
+function ValuationCalc() {
+  const [eps, setEps]       = useState(10)
+  const [growth, setGrowth] = useState(15)
+  const [pe, setPe]         = useState(20)
+
+  const rows = useMemo(() => [1,3,5].map(y => {
+    const futureEps  = eps * Math.pow(1 + growth / 100, y)
+    const fairPrice  = futureEps * pe
+    const safePrice  = fairPrice * 0.75
+    return { y, futureEps: futureEps.toFixed(2), fairPrice: Math.round(fairPrice), safePrice: Math.round(safePrice) }
+  }), [eps, growth, pe])
+
+  return (
+    <div className="tool-card">
+      <div className="tool-title">📐 股票估值計算機</div>
+      <div className="tool-sub">輸入 EPS 與成長預期，估算合理股價與安全邊際買點</div>
+      <div className="tool-inputs">
+        {[
+          { label:'當前 EPS（元）', val:eps, set:setEps, min:0.5, max:100, step:0.5, unit:'元' },
+          { label:'預期年成長率',   val:growth, set:setGrowth, min:0, max:50, step:1, unit:'%' },
+          { label:'目標本益比 P/E', val:pe, set:setPe, min:5, max:60, step:1, unit:'x' },
+        ].map(f => (
+          <div key={f.label} className="tool-field">
+            <div className="tool-field-row">
+              <label className="tool-label">{f.label}</label>
+              <span className="tool-field-val">{f.val}{f.unit}</span>
+            </div>
+            <input type="range" min={f.min} max={f.max} step={f.step} value={f.val}
+              onChange={e => f.set(+e.target.value)} className="tool-range"/>
+          </div>
+        ))}
+      </div>
+      <div className="vc-table">
+        <div className="vc-thead">
+          <span>期間</span><span>預估 EPS</span><span>合理股價</span><span>安全邊際</span>
+        </div>
+        {rows.map(r => (
+          <div key={r.y} className="vc-row">
+            <span className="vc-year">{r.y} 年後</span>
+            <span className="vc-eps">{r.futureEps} 元</span>
+            <span className="vc-fair">{r.fairPrice} 元</span>
+            <span className="vc-safe">{r.safePrice} 元</span>
+          </div>
+        ))}
+      </div>
+      <div className="vc-note">安全邊際 = 合理股價 × 75%，預留 25% 緩衝以應對估算誤差。</div>
+    </div>
+  )
+}
+
 // ── Learn Page ────────────────────────────────────────────────────────────
 const FILTER_TABS = [
   { id:'all',         label:'全部' },
@@ -679,6 +926,7 @@ const FILTER_TABS = [
   { id:'tech',        label:'技術分析' },
   { id:'sentiment',   label:'市場情緒' },
   { id:'fundamental', label:'基本面' },
+  { id:'tools',       label:'🛠 工具' },
 ]
 
 export function LearnPage() {
@@ -744,6 +992,13 @@ export function LearnPage() {
       {/* ── Filter tabs ───────────────────────────────────────── */}
       <div className="lp-tabs">
         {FILTER_TABS.map(tab => {
+          if (tab.id === 'tools') return (
+            <button key={tab.id}
+              className={`lp-tab${filter === tab.id ? ' lp-tab--on' : ''}`}
+              onClick={() => setFilter(tab.id)}>
+              {tab.label}
+            </button>
+          )
           const tabCards = tab.id === 'all' ? CARDS : CARDS.filter(c => c.cat === tab.id)
           const tabDone  = tabCards.filter(c => read.has(c.id)).length
           const col      = tab.id !== 'all' ? CATS[tab.id].color : undefined
@@ -764,7 +1019,13 @@ export function LearnPage() {
       </div>
 
       {/* ── Content ───────────────────────────────────────────── */}
-      {filter === 'all'
+      {filter === 'tools' ? (
+        <div className="tool-section">
+          <CompoundCalc/>
+          <RiskQuiz/>
+          <ValuationCalc/>
+        </div>
+      ) : filter === 'all'
         ? Object.entries(CATS).map(([catId, cat]) => {
             const catCards = CARDS.filter(c => c.cat === catId)
             const catDone  = catCards.filter(c => read.has(c.id)).length
