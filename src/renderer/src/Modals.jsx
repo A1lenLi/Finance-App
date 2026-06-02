@@ -178,16 +178,17 @@ function GlossText({ children }) {
 function AiStockChip({ label, onOpenSymbol }) {
   const [state, setState] = useState('idle')
   const ticker = extractTicker(label.trim())
-  const canOpen = !!ticker && !!onOpenSymbol
+  const query  = ticker || label.replace(/[\s　（）()【】]/g, ' ').trim()
+  const canOpen = !!onOpenSymbol
 
   const open = async () => {
-    if (!canOpen || state === 'loading') return
+    if (state === 'loading') return
     setState('loading')
     try {
-      const result = await window.api.lookupSymbol(ticker)
+      const result = await window.api.lookupSymbol(query)
       if (result?.symbol) {
         onOpenSymbol({
-          sym: ticker, name: result.name || ticker,
+          sym: result.symbol, name: result.name || result.symbol,
           val: '--', chg: 0,
           seed: symbolSeed(result.symbol), rawSym: result.symbol,
         })
@@ -200,13 +201,13 @@ function AiStockChip({ label, onOpenSymbol }) {
 
   return (
     <button
-      className={`nd-ai-chip${canOpen ? ' nd-ai-chip--link' : ''}${state === 'notfound' ? ' nd-ai-chip--err' : ''}`}
-      onClick={canOpen ? open : undefined}
+      className={`nd-ai-chip nd-ai-chip--link${state === 'notfound' ? ' nd-ai-chip--err' : ''}`}
+      onClick={open}
       disabled={state === 'loading'}>
       {state === 'loading' ? <span className="nd-ai-chip-spin"/> : null}
       {label}
-      {canOpen && state === 'idle' && <span className="nd-ai-chip-arr">↗</span>}
-      {state === 'notfound' && <span className="nd-ai-chip-arr">✕</span>}
+      {state === 'idle' && <span className="nd-ai-chip-arr">↗</span>}
+      {state === 'notfound' && <span className="nd-ai-chip-arr nd-ai-chip-arr--x">✕ 未找到</span>}
     </button>
   )
 }
