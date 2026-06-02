@@ -1,7 +1,7 @@
 {
-  "name": "finance-dashboard",
-  "version": "1.0.0",
-  "description": "全球金融市場儀表板",
+  "name": "finpulse",
+  "version": "0.1.0",
+  "description": "投資新手的財經入門工具",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -10,10 +10,19 @@
     "build:win": "npm run build && electron-builder --win"
   },
   "build": {
-    "appId": "com.finance.dashboard",
-    "productName": "金融市場儀表板",
+    "appId": "com.finpulse.app",
+    "productName": "FinPulse",
+    "copyright": "Copyright © 2026",
     "win": {
-      "target": "nsis"
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "artifactName": "FinPulse-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FinPulse"
     },
     "directories": {
       "output": "dist"

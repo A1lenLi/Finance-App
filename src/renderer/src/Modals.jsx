@@ -113,14 +113,22 @@ export function SettingsModal({ t, setTweak, onClose, onReset, themes }) {
           <SetRow label="顯示自選清單側欄" hint="右側自選即時報價欄。"><SetSwitch value={t.sidebar} onChange={v => setTweak('sidebar', v)}/></SetRow>
         </div>
         <div className="set-sect">
-          <div className="set-sect-h"><span className="set-sect-num">04</span><span className="set-sect-name">AI 功能</span></div>
-          <div className="set-ai-hint">設定任一 API 金鑰即可啟用新聞 AI 解析。優先使用 Groq（免費）。</div>
-          <SetRow label="Groq" hint="免費額度，使用 qwen3-32b 模型，速度極快。">
+          <div className="set-sect-h"><span className="set-sect-num">04</span><span className="set-sect-name">AI 新聞解析</span></div>
+          <div className="set-ai-guide">
+            <div className="set-ai-guide-title">🤖 啟用 AI 解析（免費，3 分鐘完成）</div>
+            <ol className="set-ai-steps">
+              <li>前往 <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="set-ai-link">console.groq.com/keys</a> 免費註冊</li>
+              <li>點擊「Create API Key」，複製產生的金鑰</li>
+              <li>貼到下方欄位，即可使用 AI 解析所有新聞</li>
+            </ol>
+            <div className="set-ai-note">Groq 每分鐘有免費額度，一般使用完全不需要付費。</div>
+          </div>
+          <SetRow label="Groq API Key" hint="免費，使用 qwen3-32b 模型。">
             <ApiKeyField settingKey="groqKey" label="Groq"
               placeholder="gsk_…"
               consoleUrl="https://console.groq.com/keys"/>
           </SetRow>
-          <SetRow label="Anthropic" hint="使用 Claude Haiku，每次約 $0.001 USD。">
+          <SetRow label="Anthropic API Key" hint="備用，使用 Claude Haiku，每次約 $0.001 USD。">
             <ApiKeyField settingKey="anthropicKey" label="Anthropic"
               placeholder="sk-ant-api03-…"
               consoleUrl="https://console.anthropic.com/keys"/>

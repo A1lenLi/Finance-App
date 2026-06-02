@@ -579,7 +579,7 @@ export default function App() {
                 <button className="tl-dot tl-y" aria-label="minimize"/>
                 <button className="tl-dot tl-g" aria-label="maximize"/>
               </div>
-              <div className="tl-title">財經脈動 <em>Worldwide Finance · v2.6.0</em></div>
+              <div className="tl-title">FinPulse <em>財經脈動 · Beta</em></div>
             </div>
 
             <TopBar
