@@ -668,7 +668,7 @@ export default function App() {
             <WatchRail
               items={watchlistData}
               onAdd={() => setAddModal(true)}
-              onSelect={setSymbolPage}
+              onSelect={item => symbolPage ? pushSymbolPage(item) : setSymbolPage(item)}
               onRemove={handleRemove}
               collapsed={rightCollapsed}
               onToggle={() => { setRightCollapsed(v => !v); setTweak('sidebar', rightCollapsed) }}

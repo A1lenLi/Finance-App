@@ -385,6 +385,7 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
   const [symNews, setSymNews] = useState([])
   const [realPeers, setRealPeers] = useState(null)
   const [etfHoldings, setEtfHoldings] = useState(null)
+  const holdingsCache = useRef({})
   const [groupPicker, setGroupPicker] = useState(false)
   const grpRef = useRef(null)
   const kind = classify(item)
@@ -444,10 +445,17 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
   }, [item.rawSym, tf])
 
   useEffect(() => {
-    if (!item.rawSym || !['stock'].includes(kind)) return
-    setEtfHoldings(null)
+    if (!item.rawSym || kind !== 'stock') { setEtfHoldings(null); return }
+    if (holdingsCache.current[item.rawSym]) {
+      setEtfHoldings(holdingsCache.current[item.rawSym])
+    } else {
+      setEtfHoldings(null)
+    }
     window.api.fetchEtfHoldings(item.rawSym).then(h => {
-      if (h?.holdings?.length) setEtfHoldings(h)
+      if (h?.holdings?.length) {
+        holdingsCache.current[item.rawSym] = h
+        setEtfHoldings(h)
+      }
     }).catch(() => {})
   }, [item.rawSym, kind])
 
