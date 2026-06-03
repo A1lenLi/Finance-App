@@ -710,6 +710,8 @@ app.whenReady().then(() => {
       const lastLow   = lows.filter(Boolean).at(-1)   ?? null
       const lastClose = closes.filter(Boolean).at(-1) ?? null
       return {
+        currentPrice:    meta.regularMarketPrice         ?? lastClose ?? null,
+        currentChg:      meta.regularMarketChangePercent ?? null,
         open:            meta.regularMarketOpen          ?? lastOpen  ?? null,
         previousClose:   meta.regularMarketPreviousClose ?? meta.chartPreviousClose ?? lastClose ?? null,
         dayHigh:         meta.regularMarketDayHigh       ?? lastHigh  ?? null,

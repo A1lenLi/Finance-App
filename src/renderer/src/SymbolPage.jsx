@@ -489,7 +489,9 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
     }).catch(() => {})
   }, [item.rawSym])
 
-  const curPrice = item._price ?? (parseFloat(String(item.val).replace(/,/g, '')) || 0)
+  const curPrice = item._price ?? detail?.currentPrice ?? (parseFloat(String(item.val).replace(/,/g, '')) || 0)
+  const displayVal = (item.val && item.val !== '--') ? item.val : (detail?.currentPrice?.toFixed(2) ?? '--')
+  const displayChg = item.chg !== 0 ? item.chg : (detail?.currentChg ?? 0)
 
   return (
     <div className="sp-page">
@@ -508,9 +510,9 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
         </div>
         <div className="sp-head-r">
           <div className="sp-price-wrap">
-            <div className="sp-price">{item.val}</div>
-            <div className="sp-chg" style={{ color: item.chg > 0 ? conv.upColor : item.chg < 0 ? conv.downColor : 'var(--text-muted)' }}>
-              {item.chg > 0 ? '+' : ''}{item.chg.toFixed(2)}%
+            <div className="sp-price">{displayVal}</div>
+            <div className="sp-chg" style={{ color: displayChg > 0 ? conv.upColor : displayChg < 0 ? conv.downColor : 'var(--text-muted)' }}>
+              {displayChg > 0 ? '+' : ''}{displayChg.toFixed(2)}%
             </div>
           </div>
           <div className="sp-act">
