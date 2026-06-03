@@ -121,18 +121,20 @@
 /* Group tabs */
 .wlp-groups {
   display: flex; align-items: center; gap: 6px;
-  padding: 0 24px 14px; flex-wrap: wrap;
+  padding: 0 24px 14px;
+  overflow-x: auto; flex-wrap: nowrap;
+  scrollbar-width: none;
 }
+.wlp-groups::-webkit-scrollbar { display: none; }
 .wlp-gtab {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 110px; padding: 5px 14px; border-radius: 20px;
+  flex-shrink: 0; padding: 5px 14px; border-radius: 20px;
   border: 1px solid var(--border); background: transparent;
   color: var(--text-muted); font-size: 12.5px; cursor: pointer;
-  transition: all 0.15s; overflow: hidden;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.wlp-gtab-name {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+.wlp-gtab-name { white-space: nowrap; }
 .wlp-gtab:hover { border-color: var(--accent); color: var(--text); }
 .wlp-gtab.on { background: var(--surface-2); border-color: var(--accent); color: var(--text); }
 .wlp-gtab-dot {
