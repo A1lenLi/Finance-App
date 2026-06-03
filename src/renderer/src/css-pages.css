@@ -55,7 +55,7 @@
 }
 .wlp-thead {
   display: grid;
-  grid-template-columns: 1fr 130px 120px 170px 72px;
+  grid-template-columns: minmax(0, 1fr) 130px 120px 170px 72px;
   background: rgba(255,255,255,0.02);
   border-bottom: 1px solid var(--border);
   padding: 0 18px;
@@ -69,7 +69,7 @@
 
 .wlp-row {
   display: grid;
-  grid-template-columns: 1fr 130px 120px 170px 72px;
+  grid-template-columns: minmax(0, 1fr) 130px 120px 170px 72px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
