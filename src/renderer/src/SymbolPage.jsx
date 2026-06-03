@@ -384,6 +384,7 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
   const [indicatorData, setIndicatorData] = useState(null)
   const [symNews, setSymNews] = useState([])
   const [realPeers, setRealPeers] = useState(null)
+  const [etfHoldings, setEtfHoldings] = useState(null)
   const [groupPicker, setGroupPicker] = useState(false)
   const grpRef = useRef(null)
   const kind = classify(item)
@@ -441,6 +442,14 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
       .catch(() => setChartData(null))
       .finally(() => setChartLoading(false))
   }, [item.rawSym, tf])
+
+  useEffect(() => {
+    if (!item.rawSym || !['stock'].includes(kind)) return
+    setEtfHoldings(null)
+    window.api.fetchEtfHoldings(item.rawSym).then(h => {
+      if (h?.holdings?.length) setEtfHoldings(h)
+    }).catch(() => {})
+  }, [item.rawSym, kind])
 
   useEffect(() => {
     if (!item.rawSym || !isStock) return
@@ -623,6 +632,25 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
                 <div className="sp-quote">
                   <RangeRow label="本日區間" lo={detail.dayLow} hi={detail.dayHigh} val={curPrice}/>
                   <RangeRow label="52 週區間" lo={detail.fiftyTwoWeekLow} hi={detail.fiftyTwoWeekHigh} val={curPrice}/>
+                </div>
+              </SPCard>
+            )}
+
+            {etfHoldings && (
+              <SPCard kicker="ETF" title="前十大成分股"
+                action={<span className="sp-card-aux">{etfHoldings.stockPosition ? `股票 ${etfHoldings.stockPosition}` : 'Yahoo Finance'}</span>}>
+                <div className="sp-holdings">
+                  {etfHoldings.holdings.slice(0,10).map((h, i) => (
+                    <button key={i} className="sp-holding-row" onClick={() => h.symbol && onOpenSymbol({ sym: h.symbol, name: h.name, val: '--', chg: 0, seed: symbolSeed(h.symbol), rawSym: h.symbol })}>
+                      <span className="sp-holding-rank">{i + 1}</span>
+                      <span className="sp-holding-sym">{h.symbol || '—'}</span>
+                      <span className="sp-holding-name">{h.name}</span>
+                      <span className="sp-holding-bar-wrap">
+                        <span className="sp-holding-bar" style={{ width: `${Math.min(h.pct * 100, 100)}%` }}/>
+                      </span>
+                      <span className="sp-holding-pct">{h.pctFmt}</span>
+                    </button>
+                  ))}
                 </div>
               </SPCard>
             )}

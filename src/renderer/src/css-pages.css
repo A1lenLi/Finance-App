@@ -519,6 +519,22 @@
 }
 
 /* KEY-VALUE LIST ───────────────────────────────────────── */
+.sp-holdings { display: flex; flex-direction: column; gap: 3px; }
+.sp-holding-row {
+  display: grid; grid-template-columns: 18px 64px 1fr 80px 44px;
+  align-items: center; gap: 8px;
+  padding: 7px 10px; margin: 0 -10px; border-radius: 7px;
+  background: none; border: none; cursor: pointer; text-align: left;
+  transition: background 0.12s;
+}
+.sp-holding-row:hover { background: var(--surface-3); }
+.sp-holding-rank { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); text-align: right; }
+.sp-holding-sym { font-size: 13px; font-weight: 700; color: var(--accent); font-family: var(--font-mono); }
+.sp-holding-name { font-size: 13px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-holding-bar-wrap { background: var(--surface-3); border-radius: 99px; height: 5px; overflow: hidden; }
+.sp-holding-bar { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s ease; }
+.sp-holding-pct { font-size: 13px; font-weight: 700; font-family: var(--font-mono); color: var(--text); text-align: right; }
+
 .sp-peers { display: flex; flex-direction: column; gap: 2px; }
 .sp-peer {
   display: grid; grid-template-columns: 1fr auto auto;
