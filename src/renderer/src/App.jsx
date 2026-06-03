@@ -310,7 +310,7 @@ const CONVENTIONS = {
 const TWEAK_DEFAULTS = { theme:'blue', convention:'red_up', density:'regular', chartType:'area', sidebar:true, leftNav:true }
 
 const NAV_BACK_LABEL = {
-  feed:      '今日脈動',
+  feed:      '主頁',
   indices:   '全球股市',
   forex:     '外匯匯率',
   sentiment: '市場情緒',
@@ -376,7 +376,11 @@ export default function App() {
   const [matrixTab, setMatrixTab] = useState('indices')
   const [leftCollapsed, setLeftCollapsed] = useState(!t.leftNav)
   const [rightCollapsed, setRightCollapsed] = useState(!t.sidebar)
-  const [symbolPage, setSymbolPage] = useState(null)
+  const [symbolStack, setSymbolStack] = useState([])
+  const symbolPage = symbolStack[symbolStack.length - 1] ?? null
+  const setSymbolPage = (item) => setSymbolStack(item ? [item] : [])
+  const pushSymbolPage = (item) => setSymbolStack(prev => item ? [...prev, item] : prev)
+  const popSymbolPage = () => setSymbolStack(prev => prev.slice(0, -1))
   const [watchlistPage, setWatchlistPage] = useState(false)
   const [learnPage, setLearnPage] = useState(false)
   const [sentimentPage, setSentimentPage] = useState(false)
@@ -618,15 +622,15 @@ export default function App() {
               {symbolPage ? (
                 <SymbolPage
                   item={symbolPage}
-                  onClose={() => setSymbolPage(null)}
+                  onClose={popSymbolPage}
                   onAddWatch={handleAdd}
                   inWatchlist={watchlistData.some(w => w.rawSym === symbolPage.rawSym)}
-                  onOpenSymbol={setSymbolPage}
+                  onOpenSymbol={pushSymbolPage}
                   onOpenNews={setNewsModal}
                   onOpenAlert={setAlertItem}
                   groups={groups}
                   onSaveGroups={newGroups => { setGroups(newGroups); window.api.saveGroups(newGroups).catch(() => {}) }}
-                  backLabel={watchlistPage ? '自選清單' : learnPage ? '投資百科' : sentimentPage ? '市場情緒' : calendarPage ? '財經日曆' : marketPage ? '市場行情' : (NAV_BACK_LABEL[activeNav] || '上一頁')}
+                  backLabel={symbolStack.length > 1 ? (symbolStack[symbolStack.length - 2]?.name || '上一頁') : watchlistPage ? '自選清單' : learnPage ? '投資百科' : sentimentPage ? '市場情緒' : calendarPage ? '財經日曆' : marketPage ? '市場行情' : (NAV_BACK_LABEL[activeNav] || '主頁')}
                 />
               ) : learnPage ? (
                 <LearnPage/>
