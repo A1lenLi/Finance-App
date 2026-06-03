@@ -293,7 +293,7 @@ export function WatchRail({ items, onAdd, onSelect, onRemove, collapsed, onToggl
   )
 }
 
-export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLeft, onPortfolio, density, onCycleDensity }) {
+export function TopBar({ onSearch, onPickSymbol, onGlossary, onSettings, onRefresh, onToggleLeft, onPortfolio, density, onCycleDensity }) {
   const [q, setQ] = useState('')
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
@@ -352,12 +352,13 @@ export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLe
   }, [])
 
   const pick = useCallback(r => {
-    onSearch(r.symbol)
+    if (onPickSymbol) onPickSymbol(r)
+    else onSearch(r.symbol)
     setQ('')
     setResults([])
     setOpen(false)
     inputRef.current?.blur()
-  }, [onSearch])
+  }, [onPickSymbol, onSearch])
 
   const TYPE_LABEL = { EQUITY:'股票', ETF:'ETF', INDEX:'指數', CRYPTOCURRENCY:'加密', CURRENCY:'外匯', MUTUALFUND:'基金' }
 
@@ -381,7 +382,9 @@ export function TopBar({ onSearch, onGlossary, onSettings, onRefresh, onToggleLe
             <input ref={inputRef} value={q} onChange={handleChange}
               placeholder="搜尋代碼或名稱… (⌘K)"
               onKeyDown={e => {
-                if (e.key === 'Enter' && q.trim()) {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (!q.trim()) return
                   if (results.length > 0) { pick(results[0]) }
                   else { onSearch(q.trim()); setQ(''); setOpen(false) }
                 }

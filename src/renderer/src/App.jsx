@@ -589,6 +589,9 @@ export default function App() {
             </div>
 
             <TopBar
+              onPickSymbol={r => {
+                setSymbolPage({ sym: DISPLAY_SYM[r.symbol] || r.symbol, name: r.name || r.symbol, rawSym: r.symbol, seed: symbolSeed(r.symbol), region: REGION_MAP[r.symbol] })
+              }}
               onSearch={async q => {
                 const s = q.trim()
                 if (!s) return
