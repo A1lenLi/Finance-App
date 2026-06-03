@@ -10,8 +10,10 @@
 /* ── WATCHLIST PAGE ──────────────────────────────────────── */
 .wlp {
   padding: 24px 28px;
+  width: 100%;
   max-width: 1000px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .wlp-head {
