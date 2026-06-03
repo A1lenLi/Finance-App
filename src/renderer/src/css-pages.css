@@ -48,13 +48,16 @@
 
 /* Table */
 .wlp-table {
+  width: 100%;
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
   margin-top: 16px;
+  box-sizing: border-box;
 }
 .wlp-thead {
   display: grid;
+  width: 100%; box-sizing: border-box;
   grid-template-columns: minmax(0, 1fr) 130px 120px 170px 72px;
   background: rgba(255,255,255,0.02);
   border-bottom: 1px solid var(--border);
@@ -69,6 +72,7 @@
 
 .wlp-row {
   display: grid;
+  width: 100%; box-sizing: border-box;
   grid-template-columns: minmax(0, 1fr) 130px 120px 170px 72px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border);
