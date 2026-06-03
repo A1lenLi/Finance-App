@@ -770,7 +770,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('fetch-economic-calendar', async () => {
     const settings = readJson('settings.json', {})
-    const key = (settings.finnhubKey || '').trim() || 'd8dv9apr01qhm4ahlou0d8dv9apr01qhm4ahloug'
+    const key = (settings.finnhubKey || '').trim()
     const WD = ['日','一','二','三','四','五','六']
     const IMP = { high: 3, medium: 2, low: 1 }
     const EVT_ZH = {
