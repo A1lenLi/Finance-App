@@ -857,22 +857,24 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove, groups = [], o
       </div>
 
       {groups.length > 0 && (
-        <div className="wlp-groups">
-          <button className={`wlp-gtab ${activeGroup === null ? 'on' : ''}`}
-            onClick={() => setActiveGroup(null)}>
-            全部<span className="wlp-gtab-ct">{items.length}</span>
-          </button>
-          {groups.map(g => (
-            <button key={g.id}
-              className={`wlp-gtab ${activeGroup?.id === g.id ? 'on' : ''}`}
-              onClick={() => setActiveGroup(activeGroup?.id === g.id ? null : g)}>
-              <span className="wlp-gtab-dot" style={{ background: g.color }}/>
-              <span className="wlp-gtab-name">{g.name}</span>
-              <span className="wlp-gtab-ct">
-                {items.filter(it => g.symbols.some(s => s.symbol === it.rawSym)).length}
-              </span>
+        <div className="wlp-groups-wrap">
+          <div className="wlp-groups">
+            <button className={`wlp-gtab ${activeGroup === null ? 'on' : ''}`}
+              onClick={() => setActiveGroup(null)}>
+              全部<span className="wlp-gtab-ct">{items.length}</span>
             </button>
-          ))}
+            {groups.map(g => (
+              <button key={g.id}
+                className={`wlp-gtab ${activeGroup?.id === g.id ? 'on' : ''}`}
+                onClick={() => setActiveGroup(activeGroup?.id === g.id ? null : g)}>
+                <span className="wlp-gtab-dot" style={{ background: g.color }}/>
+                <span className="wlp-gtab-name">{g.name}</span>
+                <span className="wlp-gtab-ct">
+                  {items.filter(it => g.symbols.some(s => s.symbol === it.rawSym)).length}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

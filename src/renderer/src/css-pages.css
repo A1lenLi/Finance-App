@@ -125,18 +125,31 @@
 .wlp-remove-btn:hover { color: var(--red); border-color: var(--red); }
 
 /* Group tabs */
-.wlp-groups {
-  display: flex; align-items: center; gap: 6px;
-  padding: 0 24px 14px;
-  overflow-x: auto; flex-wrap: nowrap;
-  scrollbar-width: none;
+.wlp-groups-wrap {
+  position: relative;
+  margin: 0 0 14px;
 }
-.wlp-groups::-webkit-scrollbar { display: none; }
+.wlp-groups-wrap::after {
+  content: '';
+  position: absolute; top: 0; right: 0; bottom: 0; width: 48px;
+  background: linear-gradient(to left, var(--bg-main) 20%, transparent);
+  pointer-events: none;
+}
+.wlp-groups {
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 24px 4px;
+  overflow-x: auto; flex-wrap: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.wlp-groups::-webkit-scrollbar { height: 3px; }
+.wlp-groups::-webkit-scrollbar-track { background: transparent; }
+.wlp-groups::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 .wlp-gtab {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  flex-shrink: 0; padding: 5px 14px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
   border: 1px solid var(--border); background: transparent;
-  color: var(--text-muted); font-size: 12.5px; cursor: pointer;
+  color: var(--text-muted); font-size: 13.5px; cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
