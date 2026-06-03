@@ -491,7 +491,7 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
 
   const curPrice  = item._price ?? detail?.currentPrice ?? (parseFloat(String(item.val).replace(/,/g, '')) || 0)
   const displayVal  = (item.val && item.val !== '--') ? item.val : (detail?.currentPrice?.toFixed(2) ?? '--')
-  const displayChg  = item.chg !== 0 ? item.chg : (detail?.currentChg ?? 0)
+  const displayChg  = +(item.chg != null && item.chg !== 0 ? item.chg : (detail?.currentChg ?? 0)) || 0
   const displayName = detail?.resolvedName || item.name
 
   return (
