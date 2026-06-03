@@ -1061,7 +1061,35 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('fetch-symbol-news', async (_, symbol) => {
+    const isTW = symbol.endsWith('.TW') || symbol.endsWith('.TWO')
+    const code  = symbol.replace(/\.(TW|TWO)$/, '')
     try {
+      if (isTW) {
+        // Fetch 2 pages from cnyes and filter by stock code tag
+        const fetchPage = p => httpsGet({
+          hostname: 'api.cnyes.com',
+          path: `/media/api/v1/newslist/category/tw_stock?limit=30&page=${p}`,
+          headers: { 'User-Agent': HEADERS['User-Agent'], 'Referer': 'https://news.cnyes.com/', 'Accept': 'application/json' }
+        }).then(d => d?.items?.data ?? []).catch(() => [])
+        const [p1, p2] = await Promise.all([fetchPage(1), fetchPage(2)])
+        const all = [...p1, ...p2]
+        const matched = all
+          .filter(n => Array.isArray(n.stock) && n.stock.includes(code))
+          .slice(0, 8)
+        return matched.map(n => {
+          const cover = n.coverSrc?.['800'] ?? n.coverSrc?.['400'] ?? null
+          return {
+            id: String(n.newsId),
+            title: sanitizeText(n.title ?? ''),
+            summary: sanitizeText(n.summary ?? ''),
+            publisher: n.source ?? '鉅亨網',
+            publishAt: n.publishAt ?? Math.floor(Date.now() / 1000),
+            url: `https://news.cnyes.com/news/id/${n.newsId}`,
+            coverUrl: cover,
+          }
+        })
+      }
+      // US/other stocks: Yahoo Finance search
       const data = await httpsGet({
         hostname: 'query1.finance.yahoo.com',
         path: `/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=5&quotesCount=0&lang=en-US`,
