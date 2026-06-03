@@ -238,15 +238,17 @@
 
 /* sidebar */
 .mgr-sidebar {
-  width: 172px; flex-shrink: 0;
+  width: 172px; min-width: 172px; flex-shrink: 0;
   display: flex; flex-direction: column; gap: 3px;
   padding-right: 12px; border-right: 1px solid var(--border);
+  box-sizing: border-box;
 }
 .mgr-gtab {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 10px; border-radius: 8px;
-  border: none; background: transparent; cursor: pointer;
+  border: 1px solid transparent; background: transparent; cursor: pointer;
   color: var(--text); text-align: left; width: 100%;
+  box-sizing: border-box;
   transition: background 0.12s;
 }
 .mgr-gtab:hover { background: rgba(255,255,255,0.06); }

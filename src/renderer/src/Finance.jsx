@@ -205,7 +205,7 @@ export function SectionTitle({ kicker, label, count, action }) {
 
 // ── Chrome ────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { id:'feed',      label:'今日脈動',   icon:'pulse',     section:'pulse' },
+  { id:'feed',      label:'主頁',       icon:'pulse',     section:'pulse' },
   { id:'indices',   label:'全球股市',   icon:'chart',     section:'market', tab:'indices' },
   { id:'forex',     label:'外匯匯率',   icon:'forex',     section:'market', tab:'forex' },
   { id:'commod',    label:'大宗商品',   icon:'coin',      section:'market', tab:'commodities' },
@@ -812,7 +812,7 @@ export function WatchlistPage({ items, onAdd, onSelect, onRemove, groups = [], o
   const sorted = [...visibleItems].sort((a, b) => {
     if (sort.col === 'default') return 0
     if (sort.col === 'name')  return a.name.localeCompare(b.name, 'zh-TW') * sort.dir
-    if (sort.col === 'price') return ((parseFloat(a.val) || 0) - (parseFloat(b.val) || 0)) * sort.dir
+    if (sort.col === 'price') return ((a._price ?? parseFloat(String(a.val).replace(/,/g,'')) ?? 0) - (b._price ?? parseFloat(String(b.val).replace(/,/g,'')) ?? 0)) * sort.dir
     if (sort.col === 'chg')   return (a.chg - b.chg) * sort.dir
     return 0
   })
