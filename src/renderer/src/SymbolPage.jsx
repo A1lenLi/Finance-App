@@ -489,9 +489,10 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
     }).catch(() => {})
   }, [item.rawSym])
 
-  const curPrice = item._price ?? detail?.currentPrice ?? (parseFloat(String(item.val).replace(/,/g, '')) || 0)
-  const displayVal = (item.val && item.val !== '--') ? item.val : (detail?.currentPrice?.toFixed(2) ?? '--')
-  const displayChg = item.chg !== 0 ? item.chg : (detail?.currentChg ?? 0)
+  const curPrice  = item._price ?? detail?.currentPrice ?? (parseFloat(String(item.val).replace(/,/g, '')) || 0)
+  const displayVal  = (item.val && item.val !== '--') ? item.val : (detail?.currentPrice?.toFixed(2) ?? '--')
+  const displayChg  = item.chg !== 0 ? item.chg : (detail?.currentChg ?? 0)
+  const displayName = detail?.resolvedName || item.name
 
   return (
     <div className="sp-page">
@@ -504,7 +505,7 @@ export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbo
           <div className="sp-id">
             {item.region && <RegionTag code={item.region}/>}
             <span className="sp-sym">{item.sym}</span>
-            <span className="sp-name">{item.name}</span>
+            <span className="sp-name">{displayName}</span>
             <span className="sp-exch">{kind === 'index' ? '指數' : kind === 'forex' ? '即期匯率' : kind === 'commod' ? '期貨' : kind === 'bond' ? '政府公債' : kind === 'crypto' ? '加密貨幣' : item.sym.includes('.TW') ? '臺灣證券交易所' : 'NASDAQ'}</span>
           </div>
         </div>

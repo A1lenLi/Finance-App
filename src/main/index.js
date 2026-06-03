@@ -712,6 +712,7 @@ app.whenReady().then(() => {
       return {
         currentPrice:    meta.regularMarketPrice         ?? lastClose ?? null,
         currentChg:      meta.regularMarketChangePercent ?? null,
+        resolvedName:    (() => { const sym2 = meta.symbol || symbol; const isTW2 = sym2.endsWith('.TW') || sym2.endsWith('.TWO'); return isTW2 ? (twName(sym2) ?? meta.shortName ?? meta.longName ?? null) : (meta.shortName ?? meta.longName ?? null) })(),
         open:            meta.regularMarketOpen          ?? lastOpen  ?? null,
         previousClose:   meta.regularMarketPreviousClose ?? meta.chartPreviousClose ?? lastClose ?? null,
         dayHigh:         meta.regularMarketDayHigh       ?? lastHigh  ?? null,
