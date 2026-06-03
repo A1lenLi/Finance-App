@@ -5,7 +5,7 @@ import {
   LeftNav, WatchRail, TopBar,
   Hero, PulseStrip, MarketMatrix, NewsFeed, QuickMarket,
   PortfolioBand, SentimentBar, Calendar,
-  SentimentPage, CalendarPage, WatchlistPage,
+  SentimentPage, CalendarPage, WatchlistPage, MarketPage,
 } from './Finance'
 import {
   SettingsModal, NewsDetail, GlossaryPopup, GlossaryIndex,
@@ -381,6 +381,7 @@ export default function App() {
   const [learnPage, setLearnPage] = useState(false)
   const [sentimentPage, setSentimentPage] = useState(false)
   const [calendarPage, setCalendarPage] = useState(false)
+  const [marketPage, setMarketPage] = useState(false)
   const [newsModal, setNewsModal] = useState(null)
   const [glossPopup, setGlossPopup] = useState(null)
   const [glossIndex, setGlossIndex] = useState(false)
@@ -546,7 +547,7 @@ export default function App() {
   const onNavSelect = (item) => {
     setActiveNav(item.id)
     setSymbolPage(null)
-    const resetPages = () => { setWatchlistPage(false); setLearnPage(false); setSentimentPage(false); setCalendarPage(false) }
+    const resetPages = () => { setWatchlistPage(false); setLearnPage(false); setSentimentPage(false); setCalendarPage(false); setMarketPage(false) }
     if (item.section === 'watch') {
       resetPages(); setWatchlistPage(true)
     } else if (item.section === 'learn') {
@@ -555,10 +556,11 @@ export default function App() {
       resetPages(); setSentimentPage(true)
     } else if (item.section === 'calendar') {
       resetPages(); setCalendarPage(true)
+    } else if (item.section === 'market') {
+      resetPages(); setMatrixTab(item.tab); setMarketPage(true)
     } else {
       resetPages()
-      if (item.section === 'market') { setMatrixTab(item.tab); scrollTo('section-market') }
-      else if (item.section === 'pulse') scrollTo('section-hero')
+      if (item.section === 'pulse') scrollTo('section-hero')
       else if (item.section === 'news') scrollTo('section-news')
     }
   }
@@ -624,7 +626,7 @@ export default function App() {
                   onOpenAlert={setAlertItem}
                   groups={groups}
                   onSaveGroups={newGroups => { setGroups(newGroups); window.api.saveGroups(newGroups).catch(() => {}) }}
-                  backLabel={watchlistPage ? '自選清單' : learnPage ? '投資百科' : sentimentPage ? '市場情緒' : calendarPage ? '財經日曆' : (NAV_BACK_LABEL[activeNav] || '上一頁')}
+                  backLabel={watchlistPage ? '自選清單' : learnPage ? '投資百科' : sentimentPage ? '市場情緒' : calendarPage ? '財經日曆' : marketPage ? '市場行情' : (NAV_BACK_LABEL[activeNav] || '上一頁')}
                 />
               ) : learnPage ? (
                 <LearnPage/>
@@ -632,6 +634,8 @@ export default function App() {
                 <SentimentPage/>
               ) : calendarPage ? (
                 <CalendarPage/>
+              ) : marketPage ? (
+                <MarketPage tab={matrixTab} onSelect={setSymbolPage}/>
               ) : watchlistPage ? (
                 <WatchlistPage
                   items={watchlistData}

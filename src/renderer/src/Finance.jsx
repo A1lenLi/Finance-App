@@ -598,6 +598,33 @@ export function QuickMarket({ onSelect }) {
 }
 
 // ── SentimentPage / CalendarPage (子頁包裝) ──────────────────
+const MARKET_TAB_LABEL = {
+  indices: '全球股市', forex: '外匯匯率', commodities: '大宗商品',
+  treasuries: '公債殖利率', crypto: '加密貨幣',
+}
+const MARKET_TAB_SUB = {
+  indices:     '各大指數即時報價與漲跌幅',
+  forex:       '主要貨幣對即時匯率',
+  commodities: '能源、金屬、農產品走勢',
+  treasuries:  '美國公債各期殖利率',
+  crypto:      '主流加密貨幣即時行情',
+}
+
+export function MarketPage({ tab = 'indices', onSelect }) {
+  const label = MARKET_TAB_LABEL[tab] || '市場行情'
+  const sub   = MARKET_TAB_SUB[tab]   || ''
+  return (
+    <div className="subpage">
+      <div className="subpage-head">
+        <div className="subpage-kicker">MARKET</div>
+        <div className="subpage-title">{label}</div>
+        <div className="subpage-sub">{sub}</div>
+      </div>
+      <MarketMatrix onSelect={onSelect} defaultTab={tab}/>
+    </div>
+  )
+}
+
 export function SentimentPage() {
   return (
     <div className="subpage">
