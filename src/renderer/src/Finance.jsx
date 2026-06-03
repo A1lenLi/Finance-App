@@ -620,7 +620,7 @@ export function MarketPage({ tab = 'indices', onSelect }) {
         <div className="subpage-title">{label}</div>
         <div className="subpage-sub">{sub}</div>
       </div>
-      <MarketMatrix onSelect={onSelect} defaultTab={tab}/>
+      <MarketMatrix key={tab} onSelect={onSelect} defaultTab={tab}/>
     </div>
   )
 }
