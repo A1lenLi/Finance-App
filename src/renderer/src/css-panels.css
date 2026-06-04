@@ -363,6 +363,7 @@
 .nf-head { border-bottom: 1px solid var(--border); }
 .nf-head .section-title { padding-bottom: var(--pad-card); }
 .nf-tabs { display: flex; align-items: center; gap: 2px; }
+.nf-updated { font-size: 11.5px; color: var(--text-muted); margin-right: 4px; white-space: nowrap; }
 .nf-refresh {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border-radius: 6px; margin-left: 4px;

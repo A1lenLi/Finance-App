@@ -580,7 +580,7 @@ export function MarketMatrix({ onSelect, defaultTab = 'indices' }) {
 }
 
 // ── Feed Panels ───────────────────────────────────────────────
-export function NewsFeed({ onOpen, onRefresh, refreshing, limit }) {
+export function NewsFeed({ onOpen, onRefresh, refreshing, limit, updatedAt }) {
   const data = useData()
   const [tab, setTab] = useState('all')
   const ALL_TABS = [{ id:'all', label:'全部' }, { id:'頭條', label:'頭條' }, { id:'央行', label:'央行' }, { id:'匯市', label:'匯市' }, { id:'科技', label:'科技' }, { id:'加密', label:'加密' }]
@@ -599,6 +599,7 @@ export function NewsFeed({ onOpen, onRefresh, refreshing, limit }) {
         <SectionTitle kicker="LIVE" label="今日新聞動態" count={filtered.length}
           action={<div className="nf-tabs">
             {tabs.map(t => <button key={t.id} className={`nf-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>)}
+            {updatedAt && <span className="nf-updated">更新 {updatedAt.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' })}</span>}
             {onRefresh && <button className="nf-refresh" onClick={onRefresh} disabled={refreshing} title="重新整理">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}>
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>

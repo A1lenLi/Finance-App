@@ -368,6 +368,7 @@ export default function App() {
   const [watchlistData, setWatchlistData] = useState([])
   const [news, setNews] = useState([])
   const [newsLoading, setNewsLoading] = useState(false)
+  const [newsUpdatedAt, setNewsUpdatedAt] = useState(null)
   const [groups, setGroups] = useState([])
   const [activeWatchGroup, setActiveWatchGroup] = useState(null)
   const [calendarData, setCalendarData] = useState(() => buildCalendar())
@@ -428,7 +429,7 @@ export default function App() {
     setNewsLoading(true)
     try {
       const items = await window.api.fetchNewsMulti()
-      if (Array.isArray(items)) setNews(items.map(adaptNews))
+      if (Array.isArray(items)) { setNews(items.map(adaptNews)); setNewsUpdatedAt(new Date()) }
     } catch {
       try {
         const items = await window.api.fetchNews('tw_stock')
@@ -451,6 +452,11 @@ export default function App() {
     const id = setInterval(loadMarketData, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [loadMarketData])
+
+  useEffect(() => {
+    const id = setInterval(loadNews, 15 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [loadNews])
 
   useEffect(() => {
     if (!alerts.length || !marketData) return
@@ -660,7 +666,7 @@ export default function App() {
                   <PulseStrip onSelect={setSymbolPage}/>
                   <QuickMarket onSelect={setSymbolPage}/>
                   <PortfolioBand onManage={() => setPortfolioOpen(true)}/>
-                  <div id="section-news"><NewsFeed onOpen={setNewsModal} onRefresh={loadNews} refreshing={newsLoading}/></div>
+                  <div id="section-news"><NewsFeed onOpen={setNewsModal} onRefresh={loadNews} refreshing={newsLoading} updatedAt={newsUpdatedAt}/></div>
                   <footer style={{ padding:'20px 4px', fontSize:11, color:'var(--text-muted)', textAlign:'center', borderTop:'1px solid var(--border)', marginTop:8 }}>
                     資料來源：Yahoo Finance｜點擊任意項目查看詳情｜<strong style={{ color:'var(--text)' }}>僅供參考，不構成投資建議</strong>
                   </footer>
