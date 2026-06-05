@@ -193,7 +193,13 @@ function AiStockChip({ label, onOpenSymbol }) {
     if (state === 'loading') return
     setState('loading')
     try {
-      const result = await window.api.lookupSymbol(query)
+      // 1. Try direct lookup (works for exact tickers like NVDA, 2330.TW)
+      let result = ticker ? await window.api.lookupSymbol(ticker).catch(() => null) : null
+      // 2. Fallback: search by label text (works for Chinese names like 台積電, 半導體)
+      if (!result?.symbol) {
+        const hits = await window.api.searchSymbol(query).catch(() => [])
+        if (hits?.length) result = { symbol: hits[0].symbol, name: hits[0].name }
+      }
       if (result?.symbol) {
         onOpenSymbol({
           sym: result.symbol, name: result.name || result.symbol,
@@ -297,7 +303,7 @@ export function NewsDetail({ news, onClose, onOpenSymbol }) {
         {ai === 'loading' && (
           <div className="nd-ai-loading">
             <span className="nd-ai-dots"><span/><span/><span/></span>
-            Claude 正在分析中…
+            AI 模型分析中…
           </div>
         )}
         {ai?.ok && (
