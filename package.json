@@ -1,6 +1,6 @@
 {
   "name": "finpulse",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "投資新手的財經入門工具",
   "main": "./out/main/index.js",
   "scripts": {
@@ -14,7 +14,14 @@
     "productName": "FinPulse",
     "copyright": "Copyright © 2026",
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "artifactName": "FinPulse-Setup-${version}.exe"
     },
     "nsis": {
@@ -26,11 +33,17 @@
     },
     "directories": {
       "output": "dist"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "A1lenLi",
+      "repo": "Finance-App"
     }
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
+    "electron-updater": "^6.8.9",
     "yahoo-finance2": "^2.11.3"
   },
   "devDependencies": {

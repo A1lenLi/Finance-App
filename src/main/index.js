@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { request } from 'https'
 import { deflateSync } from 'zlib'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { autoUpdater } from 'electron-updater'
 
 
 // ── Default watchlist groups ──────────────────────────────────────────────────
@@ -1287,19 +1288,26 @@ app.whenReady().then(() => {
     return next
   })
 
-  ipcMain.handle('check-app-update', async () => {
-    try {
-      const data = await httpsGet({
-        hostname: 'api.github.com',
-        path: '/repos/A1lenLi/Finance-App/releases/latest',
-        method: 'GET',
-        headers: { 'User-Agent': 'FinPulse-App', 'Accept': 'application/vnd.github.v3+json' }
-      })
-      const latest = (data?.tag_name || '').replace(/^v/, '')
-      const current = app.getVersion()
-      return { latest, current, hasUpdate: !!latest && latest !== current }
-    } catch { return null }
-  })
+  // ── Auto-updater (electron-updater + GitHub Releases) ──────────
+  if (!is.dev) {
+    autoUpdater.logger = null
+    autoUpdater.autoDownload = true
+    autoUpdater.autoInstallOnAppQuit = true
+    autoUpdater.setFeedURL({ provider: 'github', owner: 'A1lenLi', repo: 'Finance-App' })
+
+    let _pendingVersion = ''
+    const sendUpd = (state, extra = {}) =>
+      mainWindow?.webContents.send('update-status', { state, ...extra })
+
+    autoUpdater.on('update-available',  info => { _pendingVersion = info.version; sendUpd('available',   { version: info.version }) })
+    autoUpdater.on('download-progress', p    => sendUpd('downloading', { version: _pendingVersion, percent: Math.round(p.percent) }))
+    autoUpdater.on('update-downloaded', info => sendUpd('ready',       { version: info.version }))
+    autoUpdater.on('error',             ()   => {})
+
+    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 5000)
+  }
+
+  ipcMain.handle('install-update', () => { autoUpdater.quitAndInstall(true, true) })
 
     // Pre-warm TW stock name cache in background
   getTWStocks().catch(() => {})

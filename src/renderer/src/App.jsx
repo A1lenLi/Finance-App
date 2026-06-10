@@ -400,7 +400,7 @@ export default function App() {
   const [externalSentiment, setExternalSentiment] = useState(null)
   const [twseAdvDec, setTwseAdvDec] = useState(null)
   const [groupManagerOpen, setGroupManagerOpen] = useState(false)
-  const [updateInfo, setUpdateInfo] = useState(null)
+  const [updateStatus, setUpdateStatus] = useState(null)
   const [holdings, saveHoldings] = usePortfolio()
   const [alerts, saveAlerts] = useAlerts()
 
@@ -449,9 +449,9 @@ export default function App() {
     window.api.fetchSentiment().then(s => { if (s) setExternalSentiment(s) }).catch(() => {})
     window.api.fetchEconomicCalendar().then(data => { if (data?.length) setCalendarData(data) }).catch(() => {})
     window.api.fetchMarketAdvDec().then(d => { if (d) setTwseAdvDec(d) }).catch(() => {})
-    setTimeout(() => {
-      window.api.checkAppUpdate().then(r => { if (r?.hasUpdate) setUpdateInfo(r) }).catch(() => {})
-    }, 10000)
+    if (window.api.onUpdateStatus) {
+      window.api.onUpdateStatus(data => setUpdateStatus(data))
+    }
   }, [loadMarketData])
 
   useEffect(() => {
@@ -714,14 +714,27 @@ export default function App() {
                 ))}
               </div>
             )}
-            {updateInfo && (
+            {updateStatus && (
               <div className="update-banner">
-                <span className="upd-label">新版本 v{updateInfo.latest} 可用</span>
-                <span className="upd-cur">（目前 v{updateInfo.current}）</span>
-                <button className="upd-btn" onClick={() => window.api.openExternal('https://github.com/A1lenLi/Finance-App/releases/latest')}>
-                  查看更新
-                </button>
-                <button className="upd-x" onClick={() => setUpdateInfo(null)}>×</button>
+                {updateStatus.state === 'available' && <>
+                  <span className="upd-icon">↓</span>
+                  <span className="upd-label">發現新版本 v{updateStatus.version}，下載中…</span>
+                  <button className="upd-x" onClick={() => setUpdateStatus(null)}>×</button>
+                </>}
+                {updateStatus.state === 'downloading' && <>
+                  <span className="upd-icon">↓</span>
+                  <span className="upd-label">下載更新 v{updateStatus.version}</span>
+                  <div className="upd-progress-wrap">
+                    <div className="upd-progress-bar" style={{ width: `${updateStatus.percent}%` }}/>
+                  </div>
+                  <span className="upd-pct">{updateStatus.percent}%</span>
+                </>}
+                {updateStatus.state === 'ready' && <>
+                  <span className="upd-icon">✓</span>
+                  <span className="upd-label">v{updateStatus.version} 下載完成</span>
+                  <button className="upd-btn" onClick={() => window.api.installUpdate()}>立即重啟安裝</button>
+                  <button className="upd-x" onClick={() => setUpdateStatus(null)}>×</button>
+                </>}
               </div>
             )}
           </div>

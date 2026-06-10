@@ -27,7 +27,12 @@ const api = {
   fetchNewsMulti: () => ipcRenderer.invoke('fetch-news-multi'),
   fetchMarketAdvDec: () => ipcRenderer.invoke('fetch-market-adv-dec'),
   fetchEtfHoldings: (symbol) => ipcRenderer.invoke('fetch-etf-holdings', symbol),
-  checkAppUpdate: () => ipcRenderer.invoke('check-app-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateStatus: (cb) => {
+    const handler = (_, data) => cb(data)
+    ipcRenderer.on('update-status', handler)
+    return () => ipcRenderer.removeListener('update-status', handler)
+  },
 }
 
 if (process.contextIsolated) {
