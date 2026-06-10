@@ -1,6 +1,6 @@
 {
   "name": "finpulse",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "投資新手的財經入門工具",
   "main": "./out/main/index.js",
   "scripts": {
