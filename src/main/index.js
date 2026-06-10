@@ -1019,6 +1019,26 @@ app.whenReady().then(() => {
           url: n.url,
           source: '經濟日報', publisher: '經濟日報',
         }))),
+
+      // US macro / geopolitics news (Trump, tariffs, Fed, wars, etc.)
+      httpsGet({
+        hostname: 'api.cnyes.com',
+        path: '/media/api/v1/newslist/category/us_stock?limit=40&page=1',
+        method: 'GET',
+        headers: { 'User-Agent': HEADERS['User-Agent'], 'Accept': 'application/json', 'Referer': 'https://www.cnyes.com/' }
+      }).then(data => (data?.items?.data ?? [])
+        .filter(n => (n.summary ?? '').length >= MIN_SUMMARY)
+        .slice(0, 12)
+        .map(n => ({
+          id: String(n.newsId),
+          title: sanitizeText(n.title),
+          summary: sanitizeText(n.summary ?? ''),
+          publishAt: n.publishAt,
+          coverUrl: n.coverSrc?.l?.src ?? n.coverSrc?.m?.src ?? null,
+          url: `https://news.cnyes.com/news/id/${n.newsId}`,
+          source: '鉅亨網', publisher: '鉅亨網',
+          stocks: n.stocks ?? [],
+        }))),
     ])
 
     const seen = new Set()
@@ -1267,7 +1287,21 @@ app.whenReady().then(() => {
     return next
   })
 
-  // Pre-warm TW stock name cache in background
+  ipcMain.handle('check-app-update', async () => {
+    try {
+      const data = await httpsGet({
+        hostname: 'api.github.com',
+        path: '/repos/A1lenLi/Finance-App/releases/latest',
+        method: 'GET',
+        headers: { 'User-Agent': 'FinPulse-App', 'Accept': 'application/vnd.github.v3+json' }
+      })
+      const latest = (data?.tag_name || '').replace(/^v/, '')
+      const current = app.getVersion()
+      return { latest, current, hasUpdate: !!latest && latest !== current }
+    } catch { return null }
+  })
+
+    // Pre-warm TW stock name cache in background
   getTWStocks().catch(() => {})
 
 

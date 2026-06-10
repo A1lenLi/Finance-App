@@ -26,7 +26,8 @@ const api = {
   fetchEconomicCalendar: () => ipcRenderer.invoke('fetch-economic-calendar'),
   fetchNewsMulti: () => ipcRenderer.invoke('fetch-news-multi'),
   fetchMarketAdvDec: () => ipcRenderer.invoke('fetch-market-adv-dec'),
-  fetchEtfHoldings: (symbol) => ipcRenderer.invoke('fetch-etf-holdings', symbol)
+  fetchEtfHoldings: (symbol) => ipcRenderer.invoke('fetch-etf-holdings', symbol),
+  checkAppUpdate: () => ipcRenderer.invoke('check-app-update'),
 }
 
 if (process.contextIsolated) {

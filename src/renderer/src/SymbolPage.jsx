@@ -11,10 +11,12 @@ const LEARN_MAP = {
   bond:    ['indices', 'vix', 'market-cycle', 'asset-alloc'],
 }
 export const NEWS_LEARN_MAP = {
+  '地緣':  ['vix', 'fear-greed', 'market-cycle', 'asset-alloc'],
   '央行':  ['vix', 'fear-greed', 'market-cycle'],
   '匯市':  ['forex', 'asset-alloc'],
   '科技':  ['candlestick', 'pe-ratio', 'eps', 'pb-ratio', 'roe'],
   '加密':  ['candlestick', 'rsi', 'vix', 'fear-greed'],
+  '美股':  ['indices', 'candlestick', 'pe-ratio', 'market-cycle'],
   '財經':  ['pe-ratio', 'eps', 'pb-ratio', 'roe', 'dividend'],
 }
 function getRelatedCards(kind) {
@@ -34,10 +36,12 @@ export function classify(item) {
 }
 
 function classifyNewsTag(title) {
+  if (/川普|Trump|關稅|tariff|貿易戰|制裁|地緣|戰爭|烏克蘭|俄羅斯|中美貿易|美中|保護主義|白宮|國會/.test(title)) return '地緣'
   if (/央行|Fed|FOMC|利率|降息|升息|貨幣政策|鮑爾|Powell|聯準會|ECB|BOJ/.test(title)) return '央行'
   if (/匯率|美元|外匯|匯市|新台幣|人民幣|日圓|歐元|英鎊|澳幣|強升|弱勢|升值|貶值/.test(title)) return '匯市'
   if (/比特幣|BTC|以太|ETH|加密|虛擬貨幣|Crypto|USDT|Web3|NFT|幣圈/.test(title)) return '加密'
   if (/半導體|AI|人工智慧|科技|台積電|TSMC|輝達|NVIDIA|蘋果|Apple|Google|Meta|Amazon|Microsoft|三星|晶片|雲端|伺服器/.test(title)) return '科技'
+  if (/S&P|標普|那斯達克|Nasdaq|道瓊|美股|美國股市|紐交所|NYSE|華爾街/.test(title)) return '美股'
   return '財經'
 }
 
@@ -376,8 +380,8 @@ function TFChart({ item, tf, chartType, chartData, chartLoading, height = 300 })
 export function SymbolPage({ item, onClose, onAddWatch, inWatchlist, onOpenSymbol, onOpenNews, onOpenAlert, groups = [], onSaveGroups, backLabel = '上一頁' }) {
   const conv = useConv()
   const data = useData()
-  const [tf, setTf] = useState('3M')
-  const [chartType, setChartType] = useState(conv.chartType)
+  const [tf, setTf] = useState('1D')
+  const [chartType, setChartType] = useState('candle')
   const [detail, setDetail] = useState(null)
   const [chartData, setChartData] = useState(null)
   const [chartLoading, setChartLoading] = useState(false)

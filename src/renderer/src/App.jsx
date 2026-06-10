@@ -252,10 +252,12 @@ function toCryptoRow(item) {
   return { ...toRow(item), mcap: formatMcap(item.marketCap) }
 }
 function classifyNewsTag(title) {
+  if (/川普|Trump|關稅|tariff|貿易戰|制裁|地緣|戰爭|烏克蘭|俄羅斯|中美貿易|美中|保護主義|白宮|國會/.test(title)) return '地緣'
   if (/央行|Fed|FOMC|利率|降息|升息|貨幣政策|鮑爾|Powell|聯準會|ECB|BOJ/.test(title)) return '央行'
   if (/匯率|美元|外匯|匯市|新台幣|人民幣|日圓|歐元|英鎊|澳幣|強升|弱勢|升值|貶值/.test(title)) return '匯市'
   if (/比特幣|BTC|以太|ETH|加密|虛擬貨幣|Crypto|USDT|Web3|NFT|幣圈/.test(title)) return '加密'
   if (/半導體|AI|人工智慧|科技|台積電|TSMC|輝達|NVIDIA|蘋果|Apple|Google|Meta|Amazon|Microsoft|三星|晶片|雲端|伺服器/.test(title)) return '科技'
+  if (/S&P|標普|那斯達克|Nasdaq|道瓊|美股|美國股市|紐交所|NYSE|華爾街/.test(title)) return '美股'
   return '財經'
 }
 function adaptNews(n, i) {
@@ -398,6 +400,7 @@ export default function App() {
   const [externalSentiment, setExternalSentiment] = useState(null)
   const [twseAdvDec, setTwseAdvDec] = useState(null)
   const [groupManagerOpen, setGroupManagerOpen] = useState(false)
+  const [updateInfo, setUpdateInfo] = useState(null)
   const [holdings, saveHoldings] = usePortfolio()
   const [alerts, saveAlerts] = useAlerts()
 
@@ -446,6 +449,9 @@ export default function App() {
     window.api.fetchSentiment().then(s => { if (s) setExternalSentiment(s) }).catch(() => {})
     window.api.fetchEconomicCalendar().then(data => { if (data?.length) setCalendarData(data) }).catch(() => {})
     window.api.fetchMarketAdvDec().then(d => { if (d) setTwseAdvDec(d) }).catch(() => {})
+    setTimeout(() => {
+      window.api.checkAppUpdate().then(r => { if (r?.hasUpdate) setUpdateInfo(r) }).catch(() => {})
+    }, 10000)
   }, [loadMarketData])
 
   useEffect(() => {
@@ -706,6 +712,16 @@ export default function App() {
                     <div className="at-cur">現價 {a.val}</div>
                   </div>
                 ))}
+              </div>
+            )}
+            {updateInfo && (
+              <div className="update-banner">
+                <span className="upd-label">新版本 v{updateInfo.latest} 可用</span>
+                <span className="upd-cur">（目前 v{updateInfo.current}）</span>
+                <button className="upd-btn" onClick={() => window.api.openExternal('https://github.com/A1lenLi/Finance-App/releases/latest')}>
+                  查看更新
+                </button>
+                <button className="upd-x" onClick={() => setUpdateInfo(null)}>×</button>
               </div>
             )}
           </div>
